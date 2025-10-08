@@ -1,0 +1,6 @@
+# Python dependencies for KubeVirt Performance Testing Suite
+# Python 3.6+ required
+
+# No external dependencies required - uses only Python standard library
+# The scripts use subprocess to interact with kubectl CLI
+

@@ -1,0 +1,41 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: ssh-test-pod
+  namespace: default
+  labels:
+    app: kubevirt-perf-test
+spec:
+  containers:
+  - name: ssh-client
+    image: registry.access.redhat.com/ubi9/ubi:latest
+    command:
+      - /bin/bash
+      - -c
+      - |
+        # Install required packages
+        dnf install -y iputils openssh-clients nc
+        # Keep container running
+        tail -f /dev/null
+    resources:
+      requests:
+        memory: "128Mi"
+        cpu: "100m"
+      limits:
+        memory: "256Mi"
+        cpu: "200m"
+  restartPolicy: Always
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ssh-test-pod
+  namespace: default
+spec:
+  selector:
+    app: kubevirt-perf-test
+  ports:
+  - protocol: TCP
+    port: 22
+    targetPort: 22
+
