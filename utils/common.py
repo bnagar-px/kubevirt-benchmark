@@ -12,8 +12,9 @@ import subprocess
 import sys
 import time
 from datetime import datetime
+import os
 from typing import Optional, Tuple, List
-
+import csv
 
 class Colors:
     """ANSI color codes for terminal output."""
@@ -1054,18 +1055,24 @@ def add_node_selector_to_vm_yaml(yaml_file: str, node_name: str,
         return None
 
 
-def print_summary_table(results: List[Tuple], title: str = "Performance Test Summary"):
+def print_summary_table(results: List[Tuple], title: str = "Performance Test Summary", skip_clone=False):
     """
     Print a formatted summary table of test results.
 
     Args:
         results: List of tuples containing test results
         title: Table title
+        skip_clone: If True, omit clone duration column and statistics
     """
     print(f"\n{Colors.BOLD}{title}{Colors.ENDC}")
     print("=" * 95)
-    print(f"{'Namespace':<30}{'Running(s)':<15}{'Ping(s)':<15}{'Clone(s)':<15}{'Status':<20}")
-    print("-" * 95)
+
+    if skip_clone:
+        print(f"{'Namespace':<30}{'Running(s)':<20}{'Ping(s)':<20}{'Status':<20}")
+        print("-" * 95)
+    else:
+        print(f"{'Namespace':<30}{'Running(s)':<15}{'Ping(s)':<15}{'Clone(s)':<15}{'Status':<20}")
+        print("-" * 95)
 
     successful = 0
     failed = 0
@@ -1074,7 +1081,6 @@ def print_summary_table(results: List[Tuple], title: str = "Performance Test Sum
     clone_times = []
 
     for result in sorted(results, key=lambda x: x[0]):
-        # Updated tuple unpacking for new 5-element structure
         ns, run_t, ping_t, clone_t, ok = result[:5]
 
         run_str = f"{run_t:.2f}" if run_t is not None else '-'
@@ -1082,7 +1088,10 @@ def print_summary_table(results: List[Tuple], title: str = "Performance Test Sum
         clone_str = f"{clone_t:.2f}" if clone_t is not None else '-'
         status = f"{Colors.OKGREEN}Success{Colors.ENDC}" if ok else f"{Colors.FAIL}Failed{Colors.ENDC}"
 
-        print(f"{ns:<30}{run_str:<15}{ping_str:<15}{clone_str:<15}{status:<20}")
+        if skip_clone:
+            print(f"{ns:<30}{run_str:<20}{ping_str:<20}{status:<20}")
+        else:
+            print(f"{ns:<30}{run_str:<15}{ping_str:<15}{clone_str:<15}{status:<20}")
 
         if ok:
             successful += 1
@@ -1090,7 +1099,7 @@ def print_summary_table(results: List[Tuple], title: str = "Performance Test Sum
                 running_times.append(run_t)
             if ping_t is not None:
                 ping_times.append(ping_t)
-            if clone_t is not None:
+            if not skip_clone and clone_t is not None:
                 clone_times.append(clone_t)
         else:
             failed += 1
@@ -1111,13 +1120,121 @@ def print_summary_table(results: List[Tuple], title: str = "Performance Test Sum
         print(f"  Max Time to Ping:       {max(ping_times):.2f}s")
         print(f"  Min Time to Ping:       {min(ping_times):.2f}s")
 
-    if clone_times:
+    if not skip_clone and clone_times:
         print(f"  Avg Clone Duration:     {sum(clone_times) / len(clone_times):.2f}s")
         print(f"  Max Clone Duration:     {max(clone_times):.2f}s")
         print(f"  Min Clone Duration:     {min(clone_times):.2f}s")
 
     print("=" * 95)
 
+def save_results(args, results, base_dir=None, prefix="vm_creation_results", logger=None, skip_clone=False):
+    """
+    Save test results into the specified results folder (or create a new one), including summary statistics.
+
+    Args:
+        args: Parsed CLI arguments (used for naming output folders)
+        results: List of tuples (namespace, running_time, ping_time, clone_duration, success)
+        base_dir: Base directory to store results. If None, a new timestamped one is created.
+        prefix: File prefix for generated files
+        logger: Logger instance (optional)
+        skip_clone: If True, omit clone duration metrics from saved results and summaries
+
+    Returns:
+        Tuple of (json_path, csv_path, summary_json_path, summary_csv_path, output_dir)
+    """
+    # --- Prepare base output directory ---
+    if base_dir is None:
+        timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+        suffix = f"{args.namespace_prefix}_{args.start}-{args.end}"
+        output_dir = os.path.join("results", f"{timestamp}_{suffix}")
+        os.makedirs(output_dir, exist_ok=True)
+        if logger:
+            logger.info(f"Created new results directory: {output_dir}")
+    else:
+        output_dir = base_dir
+        os.makedirs(output_dir, exist_ok=True)
+
+    # File paths
+    json_path = os.path.join(output_dir, f"{prefix}.json")
+    csv_path = os.path.join(output_dir, f"{prefix}.csv")
+    summary_json_path = os.path.join(output_dir, f"summary_{prefix}.json")
+    summary_csv_path = os.path.join(output_dir, f"summary_{prefix}.csv")
+
+    # Convert tuples to dicts
+    data = []
+    for ns, run_t, ping_t, clone_t, success in results:
+        entry = {
+            "namespace": ns,
+            "running_time_sec": run_t,
+            "ping_time_sec": ping_t,
+            "success": bool(success),
+        }
+        if not skip_clone:
+            entry["clone_duration_sec"] = clone_t
+        data.append(entry)
+
+    # Save detailed JSON
+    with open(json_path, "w") as jf:
+        json.dump(data, jf, indent=4)
+    if logger:
+        logger.info(f"Saved detailed JSON results to {json_path}")
+
+    # Save detailed CSV
+    with open(csv_path, "w", newline="") as cf:
+        writer = csv.DictWriter(cf, fieldnames=data[0].keys())
+        writer.writeheader()
+        writer.writerows(data)
+    if logger:
+        logger.info(f"Saved detailed CSV results to {csv_path}")
+
+    # --- Compute summary statistics ---
+    total = len(results)
+    successful = sum(1 for r in results if r[4])
+    failed = total - successful
+
+    running_times = [r[1] for r in results if r[1] is not None]
+    ping_times = [r[2] for r in results if r[2] is not None]
+    clone_times = [r[3] for r in results if r[3] is not None] if not skip_clone else []
+
+    def calc_stats(name, values):
+        return {
+            "metric": name,
+            "avg": round(sum(values) / len(values), 2) if values else None,
+            "max": round(max(values), 2) if values else None,
+            "min": round(min(values), 2) if values else None,
+            "count": len(values),
+        }
+
+    metrics = [
+        calc_stats("running_time_sec", running_times),
+        calc_stats("ping_time_sec", ping_times),
+    ]
+    if not skip_clone:
+        metrics.append(calc_stats("clone_duration_sec", clone_times))
+
+    summary = {
+        "total_vms": total,
+        "successful": successful,
+        "failed": failed,
+        "metrics": metrics,
+    }
+
+    # --- Save summary JSON ---
+    with open(summary_json_path, "w") as sf:
+        json.dump(summary, sf, indent=4)
+    if logger:
+        logger.info(f"Saved summary JSON to {summary_json_path}")
+
+    # --- Save summary CSV ---
+    with open(summary_csv_path, "w", newline="") as cf:
+        writer = csv.DictWriter(cf, fieldnames=["metric", "avg", "max", "min", "count"])
+        writer.writeheader()
+        for m in summary["metrics"]:
+            writer.writerow(m)
+    if logger:
+        logger.info(f"Saved summary CSV to {summary_csv_path}")
+
+    return json_path, csv_path, summary_json_path, summary_csv_path, output_dir
 
 def validate_prerequisites(ssh_pod: str, ssh_pod_ns: str, logger: logging.Logger) -> bool:
     """

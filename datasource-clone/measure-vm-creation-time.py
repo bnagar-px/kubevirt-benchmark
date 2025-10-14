@@ -15,11 +15,10 @@ License: Apache 2.0
 import argparse
 import os
 import sys
-import time
 from datetime import datetime, timedelta
+import subprocess, json, time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Tuple, List, Optional
-import subprocess, json
 
 # Add parent directory to path for imports
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
@@ -28,7 +27,7 @@ from utils.common import (
     setup_logging, run_kubectl_command, create_namespace, create_namespaces_parallel,
     delete_namespace, get_vm_status, get_vmi_ip, ping_vm, print_summary_table,
     validate_prerequisites, stop_vm, start_vm, wait_for_vm_stopped,
-    get_worker_nodes, select_random_node, add_node_selector_to_vm_yaml
+    get_worker_nodes, select_random_node, add_node_selector_to_vm_yaml, save_results
 )
 
 # Default configuration
@@ -182,6 +181,14 @@ Examples:
         default=None,
         help='Specific node name to use (if not provided, a random worker node will be selected)'
     )
+
+    # Save results
+    parser.add_argument(
+        '--save-results',
+        action='store_true',
+        help='Save detailed results (JSON and CSV) inside a timestamped folder under results/.'
+    )
+
     
     args = parser.parse_args()
     
@@ -382,7 +389,7 @@ def wait_for_ping(ns: str, ip: str, start_ts: datetime, ssh_pod: str, ssh_pod_ns
 
 
 def monitor_vm(ns: str, vm_name: str, start_ts: datetime, ssh_pod: str, ssh_pod_ns: str,
-               poll_interval: int, ping_timeout: int, logger) -> Tuple[str, float, float, float, bool]:
+               poll_interval: int, ping_timeout: int, logger, skip_dv_clone_tracking=False) -> Tuple[str, float, float, float, bool]:
     """
     Monitor a single VM through its lifecycle and record clone timing.
 
@@ -395,21 +402,23 @@ def monitor_vm(ns: str, vm_name: str, start_ts: datetime, ssh_pod: str, ssh_pod_
         poll_interval: Polling interval
         ping_timeout: Ping timeout
         logger: Logger instance
-
+        skip_dv_clone_tracking: Flag to control DataVolume Clone
     Returns:
         Tuple of (namespace, running_time, ping_time, clone_duration, success)
     """
     try:
-        # Step 1: Track clone timing first
-        clone_start, clone_end, clone_duration = track_clone_progress(ns, vm_name, start_ts, poll_interval, logger)
-
-        # Step 2: Wait for VM to become Running
+        # Track clone timing
+        if not skip_dv_clone_tracking:
+            clone_start, clone_end, clone_duration = track_clone_progress(ns, vm_name, start_ts, poll_interval, logger)
+        else:
+            clone_duration = None
+        # Wait for VM to become Running
         _, running_time = wait_for_vm_running(ns, vm_name, start_ts, poll_interval, logger)
 
-        # Step 3: Wait for VMI IP
+        # Wait for VMI IP
         ip = wait_for_vmi_ip(ns, vm_name, poll_interval, logger)
 
-        # Step 4: Wait until ping works
+        # Wait until ping works
         _, ping_time, success = wait_for_ping(
             ns, ip, start_ts, ssh_pod, ssh_pod_ns, poll_interval, ping_timeout, logger
         )
@@ -420,8 +429,7 @@ def monitor_vm(ns: str, vm_name: str, start_ts: datetime, ssh_pod: str, ssh_pod_
         logger.error(f"[{ns}] Error monitoring VM: {e}")
         return ns, None, None, None, False
 
-from datetime import datetime, timedelta
-import subprocess, json, time
+
 
 def track_clone_progress(ns: str, vm_name: str, start_ts: datetime, poll_interval: int, logger, timeout: int = 1800):
     """
@@ -625,6 +633,20 @@ def main():
     # Print summary
     print_summary_table(results, "VM Creation Performance Test Results")
 
+    # Save structured results if requested
+    if args.save_results:
+        timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+        suffix = f"{args.namespace_prefix}_{args.start}-{args.end}"
+        out_dir = os.path.join("results", f"{timestamp}_{suffix}")
+        os.makedirs(out_dir, exist_ok=True)
+        logger.info(f"Created results directory: {out_dir}")
+
+        # Save initial creation test results
+        save_results(args, results, base_dir=out_dir, prefix="vm_creation_results", logger=logger)
+        logger.info(f"Detailed and summary results saved under: {out_dir}")
+    else:
+        logger.info("VM Creation Performance Test Results not saved (use --save-results to enable).")
+
     # Boot storm testing if requested
     boot_storm_results = []
     if args.boot_storm:
@@ -706,7 +728,7 @@ def main():
             boot_futures = {
                 executor.submit(
                     monitor_vm, ns, args.vm_name, ts, args.ssh_pod, args.ssh_pod_ns,
-                    args.poll_interval, args.ping_timeout, logger
+                    args.poll_interval, args.ping_timeout, logger, skip_dv_clone_tracking=True
                 ): ns
                 for ns, ts in boot_start_times.items()
             }
@@ -727,8 +749,10 @@ def main():
         logger.info(f"Total boot storm duration: {boot_total_elapsed:.2f}s")
 
         # Print boot storm summary
-        print_summary_table(boot_storm_results, "Boot Storm Performance Test Results")
-
+        print_summary_table(boot_storm_results, "Boot Storm Performance Test Results", skip_clone=True)
+        if args.save_results:
+            save_results(args, boot_storm_results, base_dir=out_dir, prefix="boot_storm_results", logger=logger,
+                         skip_clone=True)
     # Cleanup if requested
     if args.cleanup:
         logger.info("\nCleaning up test namespaces...")
