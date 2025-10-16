@@ -16,6 +16,7 @@ import argparse
 import os
 import sys
 import time
+import signal
 from datetime import datetime, timedelta
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Tuple, List, Optional
@@ -28,7 +29,8 @@ from utils.common import (
     setup_logging, run_kubectl_command, create_namespace, create_namespaces_parallel,
     delete_namespace, get_vm_status, get_vmi_ip, ping_vm, print_summary_table,
     validate_prerequisites, stop_vm, start_vm, wait_for_vm_stopped,
-    get_worker_nodes, select_random_node, add_node_selector_to_vm_yaml
+    get_worker_nodes, select_random_node, add_node_selector_to_vm_yaml,
+    cleanup_test_namespaces, confirm_cleanup, print_cleanup_summary
 )
 
 # Default configuration
@@ -149,7 +151,22 @@ Examples:
     parser.add_argument(
         '--cleanup',
         action='store_true',
-        help='Delete test namespaces after completion'
+        help='Delete test resources and namespaces after completion'
+    )
+    parser.add_argument(
+        '--cleanup-on-failure',
+        action='store_true',
+        help='Clean up resources even if tests fail'
+    )
+    parser.add_argument(
+        '--dry-run-cleanup',
+        action='store_true',
+        help='Show what would be deleted without actually deleting'
+    )
+    parser.add_argument(
+        '--yes',
+        action='store_true',
+        help='Skip confirmation prompt for cleanup (use with caution)'
     )
     parser.add_argument(
         '--skip-namespace-creation',
@@ -509,10 +526,38 @@ def track_clone_progress(ns: str, vm_name: str, start_ts: datetime, poll_interva
 def main():
     """Main execution function."""
     args = parse_args()
-    
+
     # Setup logging
     logger = setup_logging(args.log_file, args.log_level)
-    
+
+    # Global variables for signal handler
+    namespaces_created = []
+    cleanup_on_interrupt = args.cleanup or args.cleanup_on_failure
+
+    def signal_handler(signum, frame):
+        """Handle Ctrl+C gracefully with optional cleanup."""
+        logger.warning("\n\nInterrupt received (Ctrl+C)")
+        if cleanup_on_interrupt and namespaces_created:
+            logger.info("Cleaning up resources before exit...")
+            try:
+                stats = cleanup_test_namespaces(
+                    namespace_prefix=args.namespace_prefix,
+                    start=args.start,
+                    end=args.end,
+                    vm_name=args.vm_name,
+                    delete_namespaces=True,
+                    dry_run=False,
+                    batch_size=args.namespace_batch_size,
+                    logger=logger
+                )
+                print_cleanup_summary(stats, logger)
+            except Exception as e:
+                logger.error(f"Error during interrupt cleanup: {e}")
+        sys.exit(1)
+
+    # Register signal handler
+    signal.signal(signal.SIGINT, signal_handler)
+
     logger.info("=" * 80)
     logger.info("KubeVirt VM Creation Performance Test - DataSource Clone Method")
     logger.info("=" * 80)
@@ -524,7 +569,7 @@ def main():
     logger.info(f"Poll interval: {args.poll_interval}s")
     logger.info(f"Ping timeout: {args.ping_timeout}s")
     logger.info("=" * 80)
-    
+
     # Validate prerequisites
     if not validate_prerequisites(args.ssh_pod, args.ssh_pod_ns, logger):
         logger.error("Prerequisites validation failed")
@@ -562,6 +607,7 @@ def main():
                 args.start, args.end, args.namespace_prefix,
                 args.namespace_batch_size, logger
             )
+            namespaces_created.extend(namespaces)  # Track for cleanup on interrupt
         except Exception as e:
             logger.error(f"Failed to create namespaces: {e}")
             sys.exit(1)
@@ -729,17 +775,46 @@ def main():
         # Print boot storm summary
         print_summary_table(boot_storm_results, "Boot Storm Performance Test Results")
 
-    # Cleanup if requested
-    if args.cleanup:
-        logger.info("\nCleaning up test namespaces...")
-        for ns in namespaces:
-            delete_namespace(ns, wait=False, logger=logger)
-        logger.info("Cleanup initiated (namespaces will be deleted in background)")
-    
-    logger.info("\nTest completed successfully!")
-    
-    # Exit with error code if any VMs failed
+    # Determine if cleanup should run
     failed_count = sum(1 for r in results if not r[4])
+    should_cleanup = args.cleanup or (args.cleanup_on_failure and failed_count > 0)
+
+    # Cleanup if requested
+    if should_cleanup or args.dry_run_cleanup:
+        logger.info("\n" + "=" * 80)
+        logger.info("CLEANUP")
+        logger.info("=" * 80)
+
+        # Confirm cleanup if needed
+        if not args.dry_run_cleanup and not confirm_cleanup(len(namespaces), args.yes):
+            logger.info("Cleanup cancelled by user")
+        else:
+            logger.info(f"\n{'[DRY RUN] ' if args.dry_run_cleanup else ''}Cleaning up test resources...")
+
+            try:
+                stats = cleanup_test_namespaces(
+                    namespace_prefix=args.namespace_prefix,
+                    start=args.start,
+                    end=args.end,
+                    vm_name=args.vm_name,
+                    delete_namespaces=True,
+                    dry_run=args.dry_run_cleanup,
+                    batch_size=args.namespace_batch_size,
+                    logger=logger
+                )
+
+                print_cleanup_summary(stats, logger)
+
+                if not args.dry_run_cleanup:
+                    logger.info("Cleanup completed successfully!")
+
+            except Exception as e:
+                logger.error(f"Error during cleanup: {e}")
+                logger.warning("Some resources may not have been cleaned up")
+
+    logger.info("\nTest completed successfully!")
+
+    # Exit with error code if any VMs failed
     sys.exit(0 if failed_count == 0 else 1)
 
 

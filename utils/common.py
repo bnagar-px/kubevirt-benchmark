@@ -222,12 +222,12 @@ def create_namespaces_parallel(namespaces: List[str], batch_size: int = 20,
 def delete_namespace(namespace: str, wait: bool = False, logger: Optional[logging.Logger] = None) -> bool:
     """
     Delete a namespace.
-    
+
     Args:
         namespace: Namespace name
         wait: Wait for namespace to be fully deleted
         logger: Logger instance
-    
+
     Returns:
         True if deleted successfully, False on error
     """
@@ -235,7 +235,7 @@ def delete_namespace(namespace: str, wait: bool = False, logger: Optional[loggin
         run_kubectl_command(['delete', 'namespace', namespace], logger=logger)
         if logger:
             logger.info(f"Deleted namespace: {namespace}")
-        
+
         if wait:
             # Wait for namespace to be fully deleted
             max_wait = 300  # 5 minutes
@@ -246,12 +246,469 @@ def delete_namespace(namespace: str, wait: bool = False, logger: Optional[loggin
                         logger.warning(f"Timeout waiting for namespace {namespace} deletion")
                     return False
                 time.sleep(2)
-        
+
         return True
     except Exception as e:
         if logger:
             logger.error(f"Failed to delete namespace {namespace}: {e}")
         return False
+
+
+def delete_namespaces_parallel(namespaces: List[str], batch_size: int = 20,
+                               logger: Optional[logging.Logger] = None) -> Tuple[List[str], List[str]]:
+    """
+    Delete multiple namespaces in parallel batches.
+
+    Args:
+        namespaces: List of namespace names to delete
+        batch_size: Number of namespaces to delete in parallel
+        logger: Logger instance
+
+    Returns:
+        Tuple of (successful_deletions, failed_deletions)
+    """
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+
+    if logger:
+        logger.info(f"Deleting {len(namespaces)} namespaces in batches of {batch_size}...")
+
+    successful = []
+    failed = []
+
+    with ThreadPoolExecutor(max_workers=batch_size) as executor:
+        futures = {executor.submit(delete_namespace, ns, False, logger): ns for ns in namespaces}
+
+        for future in as_completed(futures):
+            ns = futures[future]
+            try:
+                if future.result():
+                    successful.append(ns)
+                else:
+                    failed.append(ns)
+            except Exception as e:
+                if logger:
+                    logger.error(f"Exception deleting namespace {ns}: {e}")
+                failed.append(ns)
+
+    if logger:
+        logger.info(f"Namespace deletion complete: {len(successful)} successful, {len(failed)} failed")
+
+    return successful, failed
+
+
+def delete_vm(vm_name: str, namespace: str, logger: Optional[logging.Logger] = None) -> bool:
+    """
+    Delete a VM resource.
+
+    Args:
+        vm_name: VM name
+        namespace: Namespace
+        logger: Logger instance
+
+    Returns:
+        True if deleted successfully, False on error
+    """
+    try:
+        run_kubectl_command(['delete', 'vm', vm_name, '-n', namespace], check=False, logger=logger)
+        if logger:
+            logger.debug(f"Deleted VM {vm_name} in namespace {namespace}")
+        return True
+    except Exception as e:
+        if logger:
+            logger.error(f"Failed to delete VM {vm_name} in {namespace}: {e}")
+        return False
+
+
+def delete_datavolume(dv_name: str, namespace: str, logger: Optional[logging.Logger] = None) -> bool:
+    """
+    Delete a DataVolume resource.
+
+    Args:
+        dv_name: DataVolume name
+        namespace: Namespace
+        logger: Logger instance
+
+    Returns:
+        True if deleted successfully, False on error
+    """
+    try:
+        run_kubectl_command(['delete', 'dv', dv_name, '-n', namespace], check=False, logger=logger)
+        if logger:
+            logger.debug(f"Deleted DataVolume {dv_name} in namespace {namespace}")
+        return True
+    except Exception as e:
+        if logger:
+            logger.error(f"Failed to delete DataVolume {dv_name} in {namespace}: {e}")
+        return False
+
+
+def delete_pvc(pvc_name: str, namespace: str, logger: Optional[logging.Logger] = None) -> bool:
+    """
+    Delete a PersistentVolumeClaim resource.
+
+    Args:
+        pvc_name: PVC name
+        namespace: Namespace
+        logger: Logger instance
+
+    Returns:
+        True if deleted successfully, False on error
+    """
+    try:
+        run_kubectl_command(['delete', 'pvc', pvc_name, '-n', namespace], check=False, logger=logger)
+        if logger:
+            logger.debug(f"Deleted PVC {pvc_name} in namespace {namespace}")
+        return True
+    except Exception as e:
+        if logger:
+            logger.error(f"Failed to delete PVC {pvc_name} in {namespace}: {e}")
+        return False
+
+
+def delete_vmim(vmim_name: str, namespace: str, logger: Optional[logging.Logger] = None) -> bool:
+    """
+    Delete a VirtualMachineInstanceMigration resource.
+
+    Args:
+        vmim_name: VMIM name
+        namespace: Namespace
+        logger: Logger instance
+
+    Returns:
+        True if deleted successfully, False on error
+    """
+    try:
+        run_kubectl_command(['delete', 'virtualmachineinstancemigration', vmim_name, '-n', namespace],
+                          check=False, logger=logger)
+        if logger:
+            logger.debug(f"Deleted VMIM {vmim_name} in namespace {namespace}")
+        return True
+    except Exception as e:
+        if logger:
+            logger.error(f"Failed to delete VMIM {vmim_name} in {namespace}: {e}")
+        return False
+
+
+def list_resources_in_namespace(namespace: str, resource_type: str,
+                                logger: Optional[logging.Logger] = None) -> List[str]:
+    """
+    List all resources of a specific type in a namespace.
+
+    Args:
+        namespace: Namespace name
+        resource_type: Resource type (e.g., 'vm', 'dv', 'pvc', 'vmim')
+        logger: Logger instance
+
+    Returns:
+        List of resource names
+    """
+    try:
+        returncode, stdout, _ = run_kubectl_command(
+            ['get', resource_type, '-n', namespace, '-o', 'jsonpath={.items[*].metadata.name}'],
+            check=False,
+            logger=logger
+        )
+        if returncode == 0 and stdout:
+            return stdout.strip().split()
+        return []
+    except Exception as e:
+        if logger:
+            logger.debug(f"Error listing {resource_type} in {namespace}: {e}")
+        return []
+
+
+def cleanup_namespace_resources(namespace: str, vm_name: Optional[str] = None,
+                                dry_run: bool = False, logger: Optional[logging.Logger] = None) -> dict:
+    """
+    Clean up all test resources in a namespace.
+
+    Args:
+        namespace: Namespace name
+        vm_name: Optional VM name to delete (if None, deletes all VMs)
+        dry_run: If True, only show what would be deleted
+        logger: Logger instance
+
+    Returns:
+        Dictionary with cleanup statistics
+    """
+    stats = {
+        'vms_deleted': 0,
+        'dvs_deleted': 0,
+        'pvcs_deleted': 0,
+        'vmims_deleted': 0,
+        'errors': 0
+    }
+
+    if not namespace_exists(namespace, logger):
+        if logger:
+            logger.debug(f"Namespace {namespace} does not exist, skipping cleanup")
+        return stats
+
+    # Delete VirtualMachineInstanceMigrations
+    vmims = list_resources_in_namespace(namespace, 'virtualmachineinstancemigration', logger)
+    for vmim in vmims:
+        if dry_run:
+            if logger:
+                logger.info(f"[DRY RUN] Would delete VMIM: {vmim} in {namespace}")
+        else:
+            if delete_vmim(vmim, namespace, logger):
+                stats['vmims_deleted'] += 1
+            else:
+                stats['errors'] += 1
+
+    # Delete VMs
+    if vm_name:
+        vms = [vm_name]
+    else:
+        vms = list_resources_in_namespace(namespace, 'vm', logger)
+
+    for vm in vms:
+        if dry_run:
+            if logger:
+                logger.info(f"[DRY RUN] Would delete VM: {vm} in {namespace}")
+        else:
+            if delete_vm(vm, namespace, logger):
+                stats['vms_deleted'] += 1
+            else:
+                stats['errors'] += 1
+
+    # Delete DataVolumes
+    dvs = list_resources_in_namespace(namespace, 'dv', logger)
+    for dv in dvs:
+        if dry_run:
+            if logger:
+                logger.info(f"[DRY RUN] Would delete DataVolume: {dv} in {namespace}")
+        else:
+            if delete_datavolume(dv, namespace, logger):
+                stats['dvs_deleted'] += 1
+            else:
+                stats['errors'] += 1
+
+    # Delete PVCs (if any remain after DV deletion)
+    pvcs = list_resources_in_namespace(namespace, 'pvc', logger)
+    for pvc in pvcs:
+        if dry_run:
+            if logger:
+                logger.info(f"[DRY RUN] Would delete PVC: {pvc} in {namespace}")
+        else:
+            if delete_pvc(pvc, namespace, logger):
+                stats['pvcs_deleted'] += 1
+            else:
+                stats['errors'] += 1
+
+    return stats
+
+
+def cleanup_test_namespaces(namespace_prefix: str, start: int, end: int,
+                           vm_name: Optional[str] = None, delete_namespaces: bool = True,
+                           dry_run: bool = False, batch_size: int = 20,
+                           logger: Optional[logging.Logger] = None) -> dict:
+    """
+    Clean up all test resources across multiple namespaces.
+
+    Args:
+        namespace_prefix: Namespace prefix (e.g., 'kubevirt-perf-test')
+        start: Starting namespace index
+        end: Ending namespace index
+        vm_name: Optional VM name to delete
+        delete_namespaces: If True, delete namespaces after cleaning resources
+        dry_run: If True, only show what would be deleted
+        batch_size: Number of namespaces to process in parallel
+        logger: Logger instance
+
+    Returns:
+        Dictionary with overall cleanup statistics
+    """
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+
+    namespaces = [f"{namespace_prefix}-{i}" for i in range(start, end + 1)]
+
+    if logger:
+        logger.info(f"{'[DRY RUN] ' if dry_run else ''}Cleaning up {len(namespaces)} namespaces...")
+
+    overall_stats = {
+        'namespaces_processed': 0,
+        'namespaces_deleted': 0,
+        'total_vms_deleted': 0,
+        'total_dvs_deleted': 0,
+        'total_pvcs_deleted': 0,
+        'total_vmims_deleted': 0,
+        'total_errors': 0
+    }
+
+    # Clean up resources in each namespace
+    with ThreadPoolExecutor(max_workers=batch_size) as executor:
+        futures = {
+            executor.submit(cleanup_namespace_resources, ns, vm_name, dry_run, logger): ns
+            for ns in namespaces
+        }
+
+        for future in as_completed(futures):
+            ns = futures[future]
+            try:
+                stats = future.result()
+                overall_stats['namespaces_processed'] += 1
+                overall_stats['total_vms_deleted'] += stats['vms_deleted']
+                overall_stats['total_dvs_deleted'] += stats['dvs_deleted']
+                overall_stats['total_pvcs_deleted'] += stats['pvcs_deleted']
+                overall_stats['total_vmims_deleted'] += stats['vmims_deleted']
+                overall_stats['total_errors'] += stats['errors']
+            except Exception as e:
+                if logger:
+                    logger.error(f"Exception cleaning namespace {ns}: {e}")
+                overall_stats['total_errors'] += 1
+
+    # Delete namespaces if requested
+    if delete_namespaces and not dry_run:
+        if logger:
+            logger.info(f"Deleting {len(namespaces)} namespaces...")
+        successful, failed = delete_namespaces_parallel(namespaces, batch_size, logger)
+        overall_stats['namespaces_deleted'] = len(successful)
+        overall_stats['total_errors'] += len(failed)
+    elif delete_namespaces and dry_run:
+        if logger:
+            for ns in namespaces:
+                logger.info(f"[DRY RUN] Would delete namespace: {ns}")
+
+    return overall_stats
+
+
+def remove_far_annotation(vm_name: str, namespace: str, logger: Optional[logging.Logger] = None) -> bool:
+    """
+    Remove FAR (Fence Agents Remediation) annotation from a VM.
+
+    Args:
+        vm_name: VM name
+        namespace: Namespace
+        logger: Logger instance
+
+    Returns:
+        True if successful, False otherwise
+    """
+    try:
+        import json
+        patch = {
+            "metadata": {
+                "annotations": {
+                    "vm.kubevirt.io/fenced": None
+                }
+            }
+        }
+        patch_json = json.dumps(patch)
+
+        run_kubectl_command(
+            ['patch', 'vm', vm_name, '-n', namespace, '--type', 'merge', '-p', patch_json],
+            check=False,
+            logger=logger
+        )
+        if logger:
+            logger.debug(f"Removed FAR annotation from VM {vm_name} in {namespace}")
+        return True
+    except Exception as e:
+        if logger:
+            logger.error(f"Failed to remove FAR annotation from VM {vm_name} in {namespace}: {e}")
+        return False
+
+
+def delete_far_resource(far_name: str, namespace: str = 'default',
+                       logger: Optional[logging.Logger] = None) -> bool:
+    """
+    Delete a FenceAgentsRemediation custom resource.
+
+    Args:
+        far_name: FAR resource name
+        namespace: Namespace (default: 'default')
+        logger: Logger instance
+
+    Returns:
+        True if deleted successfully, False on error
+    """
+    try:
+        run_kubectl_command(
+            ['delete', 'fenceagentsremediation', far_name, '-n', namespace],
+            check=False,
+            logger=logger
+        )
+        if logger:
+            logger.info(f"Deleted FAR resource: {far_name} in namespace {namespace}")
+        return True
+    except Exception as e:
+        if logger:
+            logger.error(f"Failed to delete FAR resource {far_name}: {e}")
+        return False
+
+
+def uncordon_node(node_name: str, logger: Optional[logging.Logger] = None) -> bool:
+    """
+    Uncordon a node to make it schedulable again.
+
+    Args:
+        node_name: Node name
+        logger: Logger instance
+
+    Returns:
+        True if successful, False otherwise
+    """
+    try:
+        run_kubectl_command(['uncordon', node_name], logger=logger)
+        if logger:
+            logger.info(f"Uncordoned node: {node_name}")
+        return True
+    except Exception as e:
+        if logger:
+            logger.error(f"Failed to uncordon node {node_name}: {e}")
+        return False
+
+
+def confirm_cleanup(num_namespaces: int, auto_yes: bool = False) -> bool:
+    """
+    Prompt user to confirm cleanup operation.
+
+    Args:
+        num_namespaces: Number of namespaces to be cleaned up
+        auto_yes: If True, skip confirmation prompt
+
+    Returns:
+        True if user confirms, False otherwise
+    """
+    if auto_yes:
+        return True
+
+    if num_namespaces > 10:
+        print(f"\n{Colors.WARNING}WARNING: You are about to clean up {num_namespaces} namespaces.{Colors.ENDC}")
+        print(f"{Colors.WARNING}This will delete all VMs, DataVolumes, PVCs, and other resources.{Colors.ENDC}")
+        response = input(f"\nAre you sure you want to continue? (yes/no): ").strip().lower()
+        return response in ['yes', 'y']
+
+    return True
+
+
+def print_cleanup_summary(stats: dict, logger: Optional[logging.Logger] = None):
+    """
+    Print a summary of cleanup operations.
+
+    Args:
+        stats: Dictionary with cleanup statistics
+        logger: Logger instance
+    """
+    message = f"""
+{'=' * 80}
+CLEANUP SUMMARY
+{'=' * 80}
+  Namespaces Processed:        {stats.get('namespaces_processed', 0)}
+  Namespaces Deleted:          {stats.get('namespaces_deleted', 0)}
+  VMs Deleted:                 {stats.get('total_vms_deleted', 0)}
+  DataVolumes Deleted:         {stats.get('total_dvs_deleted', 0)}
+  PVCs Deleted:                {stats.get('total_pvcs_deleted', 0)}
+  VMIMs Deleted:               {stats.get('total_vmims_deleted', 0)}
+  Errors:                      {stats.get('total_errors', 0)}
+{'=' * 80}
+"""
+
+    if logger:
+        logger.info(message)
+    else:
+        print(message)
 
 
 def get_vm_status(vm_name: str, namespace: str, logger: Optional[logging.Logger] = None) -> Optional[str]:

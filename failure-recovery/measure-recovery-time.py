@@ -25,7 +25,9 @@ from typing import Tuple, List
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from utils.common import (
-    setup_logging, run_kubectl_command, print_summary_table
+    setup_logging, run_kubectl_command, print_summary_table,
+    cleanup_test_namespaces, confirm_cleanup, print_cleanup_summary,
+    remove_far_annotation, delete_far_resource, uncordon_node
 )
 
 # Default configuration
@@ -124,7 +126,45 @@ Examples:
         default='INFO',
         help='Logging level (default: INFO)'
     )
-    
+
+    # Cleanup options
+    parser.add_argument(
+        '--cleanup',
+        action='store_true',
+        help='Clean up FAR resources, annotations, and optionally VMs/namespaces after test'
+    )
+    parser.add_argument(
+        '--cleanup-vms',
+        action='store_true',
+        help='Also delete VMs and namespaces during cleanup (requires --cleanup)'
+    )
+    parser.add_argument(
+        '--far-name',
+        type=str,
+        help='Name of the FAR resource to clean up'
+    )
+    parser.add_argument(
+        '--far-namespace',
+        type=str,
+        default='default',
+        help='Namespace of the FAR resource (default: default)'
+    )
+    parser.add_argument(
+        '--failed-node',
+        type=str,
+        help='Name of the node that was marked as failed (to uncordon)'
+    )
+    parser.add_argument(
+        '--dry-run-cleanup',
+        action='store_true',
+        help='Show what would be cleaned up without actually cleaning'
+    )
+    parser.add_argument(
+        '--yes',
+        action='store_true',
+        help='Skip confirmation prompt for cleanup (use with caution)'
+    )
+
     args = parser.parse_args()
     
     # Validation
@@ -382,11 +422,114 @@ def main():
         print(f"    Minimum:                 {min(ping_times):.2f}s")
     
     print("\n" + "=" * 100)
-    
-    logger.info("\nRecovery test completed successfully!")
-    
-    # Exit with error code if any VMs failed
+
+    # Cleanup FAR resources if requested
     failed_count = len(results) - len(ping_times)
+
+    if args.cleanup or args.dry_run_cleanup:
+        logger.info("\n" + "=" * 80)
+        logger.info("CLEANUP - FAR Resources")
+        logger.info("=" * 80)
+
+        # Confirm cleanup if needed
+        if not args.dry_run_cleanup and not confirm_cleanup(len(namespaces), args.yes):
+            logger.info("Cleanup cancelled by user")
+        else:
+            logger.info(f"\n{'[DRY RUN] ' if args.dry_run_cleanup else ''}Cleaning up FAR resources...")
+
+            try:
+                cleanup_stats = {
+                    'far_deleted': 0,
+                    'annotations_removed': 0,
+                    'nodes_uncordoned': 0,
+                    'errors': 0
+                }
+
+                # Remove FAR resource
+                if args.far_name:
+                    if args.dry_run_cleanup:
+                        logger.info(f"[DRY RUN] Would delete FAR resource: {args.far_name} in namespace {args.far_namespace}")
+                    else:
+                        if delete_far_resource(args.far_name, args.far_namespace, logger):
+                            cleanup_stats['far_deleted'] = 1
+                        else:
+                            cleanup_stats['errors'] += 1
+                else:
+                    logger.warning("No --far-name specified, skipping FAR resource deletion")
+
+                # Remove FAR annotations from VMs
+                logger.info("Removing FAR annotations from VMs...")
+                for ns in namespaces:
+                    if args.dry_run_cleanup:
+                        logger.info(f"[DRY RUN] Would remove FAR annotation from VM {args.vm_name} in {ns}")
+                    else:
+                        if remove_far_annotation(args.vm_name, ns, logger):
+                            cleanup_stats['annotations_removed'] += 1
+                        else:
+                            cleanup_stats['errors'] += 1
+
+                # Uncordon node
+                if args.failed_node:
+                    if args.dry_run_cleanup:
+                        logger.info(f"[DRY RUN] Would uncordon node: {args.failed_node}")
+                    else:
+                        if uncordon_node(args.failed_node, logger):
+                            cleanup_stats['nodes_uncordoned'] = 1
+                        else:
+                            cleanup_stats['errors'] += 1
+                else:
+                    logger.warning("No --failed-node specified, skipping node uncordon")
+
+                # Clean up VMs and namespaces if requested
+                if args.cleanup_vms:
+                    logger.info("\nCleaning up VMs and namespaces...")
+                    vm_stats = cleanup_test_namespaces(
+                        namespace_prefix=args.namespace_prefix,
+                        start=args.start,
+                        end=args.end,
+                        vm_name=args.vm_name,
+                        delete_namespaces=True,
+                        dry_run=args.dry_run_cleanup,
+                        batch_size=args.concurrency,
+                        logger=logger
+                    )
+
+                    # Merge stats
+                    cleanup_stats.update({
+                        'namespaces_deleted': vm_stats.get('namespaces_deleted', 0),
+                        'vms_deleted': vm_stats.get('total_vms_deleted', 0),
+                        'dvs_deleted': vm_stats.get('total_dvs_deleted', 0),
+                        'pvcs_deleted': vm_stats.get('total_pvcs_deleted', 0)
+                    })
+                    cleanup_stats['errors'] += vm_stats.get('total_errors', 0)
+
+                # Print cleanup summary
+                logger.info("\n" + "=" * 80)
+                logger.info("FAR CLEANUP SUMMARY")
+                logger.info("=" * 80)
+                logger.info(f"  FAR Resources Deleted:       {cleanup_stats['far_deleted']}")
+                logger.info(f"  Annotations Removed:         {cleanup_stats['annotations_removed']}")
+                logger.info(f"  Nodes Uncordoned:            {cleanup_stats['nodes_uncordoned']}")
+
+                if args.cleanup_vms:
+                    logger.info(f"  Namespaces Deleted:          {cleanup_stats.get('namespaces_deleted', 0)}")
+                    logger.info(f"  VMs Deleted:                 {cleanup_stats.get('vms_deleted', 0)}")
+                    logger.info(f"  DataVolumes Deleted:         {cleanup_stats.get('dvs_deleted', 0)}")
+                    logger.info(f"  PVCs Deleted:                {cleanup_stats.get('pvcs_deleted', 0)}")
+
+                logger.info(f"  Errors:                      {cleanup_stats['errors']}")
+                logger.info("=" * 80)
+
+                if not args.dry_run_cleanup:
+                    logger.info("\nCleanup completed successfully!")
+
+            except Exception as e:
+                logger.error(f"Error during cleanup: {e}")
+                logger.warning("Some resources may not have been cleaned up")
+
+    logger.info("\nRecovery test completed successfully!")
+
+    # Exit with error code if any VMs failed
     sys.exit(0 if failed_count == 0 else 1)
 
 

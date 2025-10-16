@@ -43,7 +43,9 @@ from utils.common import (
     validate_prerequisites, get_worker_nodes, select_random_node,
     add_node_selector_to_vm_yaml, get_vm_node, migrate_vm, get_migration_status,
     wait_for_migration_complete, get_available_nodes, create_namespace,
-    find_busiest_node, get_vms_on_node, remove_node_selectors
+    find_busiest_node, get_vms_on_node, remove_node_selectors,
+    cleanup_test_namespaces, confirm_cleanup, print_cleanup_summary,
+    list_resources_in_namespace, delete_vmim
 )
 
 # Default configuration
@@ -137,8 +139,14 @@ Examples:
     
     # Cleanup options
     parser.add_argument('--cleanup', action='store_true',
-                       help='Delete VMs and namespaces after test')
-    
+                       help='Delete VMs, VMIMs, and namespaces after test')
+    parser.add_argument('--cleanup-on-failure', action='store_true',
+                       help='Clean up resources even if tests fail')
+    parser.add_argument('--dry-run-cleanup', action='store_true',
+                       help='Show what would be deleted without actually deleting')
+    parser.add_argument('--yes', action='store_true',
+                       help='Skip confirmation prompt for cleanup (use with caution)')
+
     return parser.parse_args()
 
 
@@ -726,17 +734,59 @@ def main():
 
         print("=" * 80)
 
+    # Determine if cleanup should run
+    should_cleanup = args.cleanup or (args.cleanup_on_failure and failed_migrations > 0)
+
     # Cleanup
-    if args.cleanup:
+    if should_cleanup or args.dry_run_cleanup:
         logger.info("\n" + "=" * 80)
         logger.info("CLEANUP")
         logger.info("=" * 80)
 
-        logger.info(f"\nDeleting {len(namespaces)} namespaces...")
-        for ns in namespaces:
-            delete_namespace(ns, logger)
+        # Confirm cleanup if needed
+        if not args.dry_run_cleanup and not confirm_cleanup(len(namespaces), args.yes):
+            logger.info("Cleanup cancelled by user")
+        else:
+            logger.info(f"\n{'[DRY RUN] ' if args.dry_run_cleanup else ''}Cleaning up test resources...")
 
-        logger.info("Cleanup complete")
+            try:
+                # Clean up VMIMs first
+                logger.info("Cleaning up VirtualMachineInstanceMigration objects...")
+                vmim_count = 0
+                for ns in namespaces:
+                    vmims = list_resources_in_namespace(ns, 'virtualmachineinstancemigration', logger)
+                    for vmim in vmims:
+                        if args.dry_run_cleanup:
+                            logger.info(f"[DRY RUN] Would delete VMIM: {vmim} in {ns}")
+                        else:
+                            if delete_vmim(vmim, ns, logger):
+                                vmim_count += 1
+
+                logger.info(f"{'[DRY RUN] Would delete' if args.dry_run_cleanup else 'Deleted'} {vmim_count} VMIM objects")
+
+                # Clean up VMs and namespaces if they were created by this test
+                if args.create_vms:
+                    stats = cleanup_test_namespaces(
+                        namespace_prefix=args.namespace_prefix,
+                        start=args.start,
+                        end=args.end,
+                        vm_name=args.vm_name,
+                        delete_namespaces=True,
+                        dry_run=args.dry_run_cleanup,
+                        batch_size=args.concurrency,
+                        logger=logger
+                    )
+                    print_cleanup_summary(stats, logger)
+                else:
+                    logger.info("VMs were not created by this test, skipping VM/namespace deletion")
+                    logger.info("Only VMIM objects were cleaned up")
+
+                if not args.dry_run_cleanup:
+                    logger.info("Cleanup completed successfully!")
+
+            except Exception as e:
+                logger.error(f"Error during cleanup: {e}")
+                logger.warning("Some resources may not have been cleaned up")
 
     logger.info("\nMigration test complete!")
 
