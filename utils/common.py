@@ -1055,24 +1055,37 @@ def add_node_selector_to_vm_yaml(yaml_file: str, node_name: str,
         return None
 
 
-def print_summary_table(results: List[Tuple], title: str = "Performance Test Summary", skip_clone=False):
+def print_summary_table(
+    results: List[Tuple],
+    title: str = "Performance Test Summary",
+    skip_clone: bool = False,
+    logger=None
+):
     """
-    Print a formatted summary table of test results.
+    Print or log a formatted summary table of test results.
 
     Args:
         results: List of tuples containing test results
         title: Table title
         skip_clone: If True, omit clone duration column and statistics
+        logger: Optional logger instance. If provided, logs instead of printing.
     """
-    print(f"\n{Colors.BOLD}{title}{Colors.ENDC}")
-    print("=" * 95)
+    def output(msg=""):
+        if logger:
+            logger.info(msg)
+        else:
+            print(msg)
+
+    output(f"\n{Colors.BOLD}{title}{Colors.ENDC}")
+    output("=" * 95)
 
     if skip_clone:
-        print(f"{'Namespace':<30}{'Running(s)':<20}{'Ping(s)':<20}{'Status':<20}")
-        print("-" * 95)
+        header = f"{'Namespace':<30}{'Running(s)':<20}{'Ping(s)':<20}{'Status':<20}"
     else:
-        print(f"{'Namespace':<30}{'Running(s)':<15}{'Ping(s)':<15}{'Clone(s)':<15}{'Status':<20}")
-        print("-" * 95)
+        header = f"{'Namespace':<30}{'Running(s)':<15}{'Ping(s)':<15}{'Clone(s)':<15}{'Status':<20}"
+
+    output(header)
+    output("-" * 95)
 
     successful = 0
     failed = 0
@@ -1089,9 +1102,11 @@ def print_summary_table(results: List[Tuple], title: str = "Performance Test Sum
         status = f"{Colors.OKGREEN}Success{Colors.ENDC}" if ok else f"{Colors.FAIL}Failed{Colors.ENDC}"
 
         if skip_clone:
-            print(f"{ns:<30}{run_str:<20}{ping_str:<20}{status:<20}")
+            line = f"{ns:<30}{run_str:<20}{ping_str:<20}{status:<20}"
         else:
-            print(f"{ns:<30}{run_str:<15}{ping_str:<15}{clone_str:<15}{status:<20}")
+            line = f"{ns:<30}{run_str:<15}{ping_str:<15}{clone_str:<15}{status:<20}"
+
+        output(line)
 
         if ok:
             successful += 1
@@ -1104,30 +1119,32 @@ def print_summary_table(results: List[Tuple], title: str = "Performance Test Sum
         else:
             failed += 1
 
-    print("=" * 95)
-    print(f"\n{Colors.BOLD}Statistics:{Colors.ENDC}")
-    print(f"  Total VMs:              {successful + failed}")
-    print(f"  Successful:             {Colors.OKGREEN}{successful}{Colors.ENDC}")
-    print(f"  Failed:                 {Colors.FAIL}{failed}{Colors.ENDC}")
+    output("=" * 95)
+    output(f"\n{Colors.BOLD}Statistics:{Colors.ENDC}")
+    output(f"  Total VMs:              {successful + failed}")
+    output(f"  Successful:             {Colors.OKGREEN}{successful}{Colors.ENDC}")
+    output(f"  Failed:                 {Colors.FAIL}{failed}{Colors.ENDC}")
 
     if running_times:
-        print(f"  Avg Time to Running:    {sum(running_times) / len(running_times):.2f}s")
-        print(f"  Max Time to Running:    {max(running_times):.2f}s")
-        print(f"  Min Time to Running:    {min(running_times):.2f}s")
+        output(f"  Avg Time to Running:    {sum(running_times) / len(running_times):.2f}s")
+        output(f"  Max Time to Running:    {max(running_times):.2f}s")
+        output(f"  Min Time to Running:    {min(running_times):.2f}s")
 
     if ping_times:
-        print(f"  Avg Time to Ping:       {sum(ping_times) / len(ping_times):.2f}s")
-        print(f"  Max Time to Ping:       {max(ping_times):.2f}s")
-        print(f"  Min Time to Ping:       {min(ping_times):.2f}s")
+        output(f"  Avg Time to Ping:       {sum(ping_times) / len(ping_times):.2f}s")
+        output(f"  Max Time to Ping:       {max(ping_times):.2f}s")
+        output(f"  Min Time to Ping:       {min(ping_times):.2f}s")
 
     if not skip_clone and clone_times:
-        print(f"  Avg Clone Duration:     {sum(clone_times) / len(clone_times):.2f}s")
-        print(f"  Max Clone Duration:     {max(clone_times):.2f}s")
-        print(f"  Min Clone Duration:     {min(clone_times):.2f}s")
+        output(f"  Avg Clone Duration:     {sum(clone_times) / len(clone_times):.2f}s")
+        output(f"  Max Clone Duration:     {max(clone_times):.2f}s")
+        output(f"  Min Clone Duration:     {min(clone_times):.2f}s")
 
-    print("=" * 95)
+    output("=" * 95)
 
-def save_results(args, results, base_dir=None, prefix="vm_creation_results", logger=None, skip_clone=False):
+
+def save_results(args, results, base_dir="results", prefix="vm_creation_results",
+                 logger=None, skip_clone=False, total_time=None):
     """
     Save test results into the specified results folder (or create a new one), including summary statistics.
 
@@ -1138,6 +1155,7 @@ def save_results(args, results, base_dir=None, prefix="vm_creation_results", log
         prefix: File prefix for generated files
         logger: Logger instance (optional)
         skip_clone: If True, omit clone duration metrics from saved results and summaries
+        total_time: Total time taken for the test (VM creation or boot storm)
 
     Returns:
         Tuple of (json_path, csv_path, summary_json_path, summary_csv_path, output_dir)
@@ -1212,10 +1230,12 @@ def save_results(args, results, base_dir=None, prefix="vm_creation_results", log
     if not skip_clone:
         metrics.append(calc_stats("clone_duration_sec", clone_times))
 
+    # --- Add total test duration ---
     summary = {
         "total_vms": total,
         "successful": successful,
         "failed": failed,
+        "total_test_duration_sec": round(total_time, 2) if total_time else None,
         "metrics": metrics,
     }
 
@@ -1233,6 +1253,118 @@ def save_results(args, results, base_dir=None, prefix="vm_creation_results", log
             writer.writerow(m)
     if logger:
         logger.info(f"Saved summary CSV to {summary_csv_path}")
+
+    return json_path, csv_path, summary_json_path, summary_csv_path, output_dir
+
+
+def save_migration_results(args, results, base_dir="results", logger=None, total_time=None):
+    """
+    Save VM migration results (per-VM data and summary) into JSON and CSV files.
+
+    Args:
+        args: Parsed CLI args (used for folder naming)
+        results: List of tuples (namespace, success, observed_duration, source, target, vmim_duration)
+        base_dir: Parent folder
+        logger: Logger instance
+        total_time: Total wall-clock migration duration (sec)
+    """
+
+
+
+    # --- Prepare base output directory ---
+    if base_dir is None:
+        timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+        suffix = f"{args.namespace_prefix}_{args.start}-{args.end}"
+        output_dir = os.path.join(base_dir, f"{timestamp}_live_migration_{suffix}")
+        os.makedirs(output_dir, exist_ok=True)
+        if logger:
+            logger.info(f"Created new results directory: {output_dir}")
+    else:
+        output_dir = base_dir
+        os.makedirs(output_dir, exist_ok=True)
+
+    json_path = os.path.join(output_dir, "migration_results.json")
+    csv_path = os.path.join(output_dir, "migration_results.csv")
+    summary_json_path = os.path.join(output_dir, "summary_migration_results.json")
+    summary_csv_path = os.path.join(output_dir, "summary_migration_results.csv")
+
+    # --- Detailed per-VM results ---
+    data = []
+    for ns, success, observed, source, target, vmim in results:
+        entry = {
+            "namespace": ns,
+            "source_node": source or "Unknown",
+            "target_node": target or "Unknown",
+            "observed_time_sec": round(observed, 2) if observed else None,
+            "vmim_time_sec": round(vmim, 2) if vmim else None,
+            "status": "Success" if success else "Failed",
+        }
+        data.append(entry)
+
+    with open(json_path, "w") as jf:
+        json.dump(data, jf, indent=4)
+    with open(csv_path, "w", newline="") as cf:
+        writer = csv.DictWriter(cf, fieldnames=data[0].keys())
+        writer.writeheader()
+        writer.writerows(data)
+
+    if logger:
+        logger.info(f"Saved detailed migration results to {json_path}")
+
+    # --- Summary statistics ---
+    total = len(results)
+    successful = sum(1 for r in results if r[1])
+    failed = total - successful
+
+    observed_times = [r[2] for r in results if r[1] and r[2]]
+    vmim_times = [r[5] for r in results if r[1] and r[5]]
+
+    summary = {
+        "total_vms": total,
+        "successful": successful,
+        "failed": failed,
+        "total_migration_duration_sec": round(total_time, 2) if total_time else None,
+        "metrics": [
+            {
+                "metric": "observed_time_sec",
+                "avg": round(sum(observed_times) / len(observed_times), 2) if observed_times else None,
+                "min": round(min(observed_times), 2) if observed_times else None,
+                "max": round(max(observed_times), 2) if observed_times else None,
+                "count": len(observed_times),
+            },
+            {
+                "metric": "vmim_time_sec",
+                "avg": round(sum(vmim_times) / len(vmim_times), 2) if vmim_times else None,
+                "min": round(min(vmim_times), 2) if vmim_times else None,
+                "max": round(max(vmim_times), 2) if vmim_times else None,
+                "count": len(vmim_times),
+            },
+            {
+                "metric": "difference_observed_vmim_sec",
+                "avg": round((sum(observed_times) / len(observed_times)) - (sum(vmim_times) / len(vmim_times)), 2)
+                if observed_times and vmim_times else None,
+                "note": "Difference includes polling overhead (~2s) and status update delays",
+            },
+        ],
+    }
+
+    with open(summary_json_path, "w") as sf:
+        json.dump(summary, sf, indent=4)
+    with open(summary_csv_path, "w", newline="") as cf:
+        writer = csv.DictWriter(cf, fieldnames=["metric", "avg", "min", "max", "count"])
+        writer.writeheader()
+        for m in summary["metrics"]:
+            if "avg" in m:
+                writer.writerow({
+                    "metric": m["metric"],
+                    "avg": m.get("avg"),
+                    "min": m.get("min"),
+                    "max": m.get("max"),
+                    "count": m.get("count"),
+                })
+
+    if logger:
+        logger.info(f"Saved summary migration results to {summary_json_path}")
 
     return json_path, csv_path, summary_json_path, summary_csv_path, output_dir
 

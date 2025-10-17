@@ -36,7 +36,7 @@ DEFAULT_VM_NAME = 'rhel-9-vm'
 DEFAULT_SSH_POD = 'ssh-test-pod'
 DEFAULT_SSH_POD_NS = 'default'
 DEFAULT_POLL_INTERVAL = 1
-DEFAULT_CONCURRENCY = 50
+DEFAULT_CONCURRENCY = 100
 DEFAULT_PING_TIMEOUT = 600  # 10 minutes
 DEFAULT_NAMESPACE_PREFIX = 'kubevirt-perf-test'
 
@@ -631,7 +631,7 @@ def main():
     logger.info(f"Total test duration: {total_elapsed:.2f}s")
     
     # Print summary
-    print_summary_table(results, "VM Creation Performance Test Results")
+    print_summary_table(results, "VM Creation Performance Test Results", logger=logger)
 
     # Save structured results if requested
     if args.save_results:
@@ -642,7 +642,7 @@ def main():
         logger.info(f"Created results directory: {out_dir}")
 
         # Save initial creation test results
-        save_results(args, results, base_dir=out_dir, prefix="vm_creation_results", logger=logger)
+        save_results(args, results, base_dir=out_dir, prefix="vm_creation_results", logger=logger, total_time=total_elapsed)
         logger.info(f"Detailed and summary results saved under: {out_dir}")
     else:
         logger.info("VM Creation Performance Test Results not saved (use --save-results to enable).")
@@ -749,10 +749,10 @@ def main():
         logger.info(f"Total boot storm duration: {boot_total_elapsed:.2f}s")
 
         # Print boot storm summary
-        print_summary_table(boot_storm_results, "Boot Storm Performance Test Results", skip_clone=True)
+        print_summary_table(boot_storm_results, "Boot Storm Performance Test Results", skip_clone=True, logger=logger)
         if args.save_results:
             save_results(args, boot_storm_results, base_dir=out_dir, prefix="boot_storm_results", logger=logger,
-                         skip_clone=True)
+                         skip_clone=True, total_time=boot_total_elapsed)
     # Cleanup if requested
     if args.cleanup:
         logger.info("\nCleaning up test namespaces...")

@@ -9,6 +9,7 @@ __pycache__/
 venv/
 env/
 results/
+excluded-results/
 
 # Logs
 *.log

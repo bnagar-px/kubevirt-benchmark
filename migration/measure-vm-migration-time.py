@@ -43,7 +43,7 @@ from utils.common import (
     validate_prerequisites, get_worker_nodes, select_random_node,
     add_node_selector_to_vm_yaml, get_vm_node, migrate_vm, get_migration_status,
     wait_for_migration_complete, get_available_nodes, create_namespace,
-    find_busiest_node, get_vms_on_node, remove_node_selectors
+    find_busiest_node, get_vms_on_node, remove_node_selectors, save_migration_results
 )
 
 # Default configuration
@@ -138,7 +138,21 @@ Examples:
     # Cleanup options
     parser.add_argument('--cleanup', action='store_true',
                        help='Delete VMs and namespaces after test')
-    
+    parser.add_argument('--skip-checks', action='store_true',
+                       help='Skip VM verifications before migration')
+    parser.add_argument(
+        '--save-results',
+        action='store_true',
+        help='Save detailed migration results (JSON and CSV) under results/.'
+    )
+
+    parser.add_argument(
+        '--results-folder',
+        type=str,
+        default='results',
+        help='Base directory to store test results (default: ./results)'
+    )
+
     return parser.parse_args()
 
 
@@ -435,53 +449,55 @@ def main():
         logger.info("\n" + "=" * 80)
         logger.info("PHASE 1: Verifying Existing VMs")
         logger.info("=" * 80)
+        if not args.skip_checks:
+            logger.info(f"\nChecking {len(namespaces)} VMs...")
+            running_count = 0
 
-        logger.info(f"\nChecking {len(namespaces)} VMs...")
-        running_count = 0
+            for ns in namespaces:
+                status = get_vm_status(args.vm_name, ns, logger)
+                if status == "Running":
+                    running_count += 1
+                else:
+                    logger.warning(f"[{ns}] VM not running (status: {status})")
 
-        for ns in namespaces:
-            status = get_vm_status(args.vm_name, ns, logger)
-            if status == "Running":
-                running_count += 1
-            else:
-                logger.warning(f"[{ns}] VM not running (status: {status})")
+            logger.info(f"\nFound {running_count}/{len(namespaces)} running VMs")
 
-        logger.info(f"\nFound {running_count}/{len(namespaces)} running VMs")
+            if running_count == 0:
+                logger.error("No running VMs found. Use --create-vms to create VMs first.")
+                sys.exit(1)
 
-        if running_count == 0:
-            logger.error("No running VMs found. Use --create-vms to create VMs first.")
-            sys.exit(1)
+            # Check if VMs have nodeSelectors and remove them
+            logger.info("\n" + "=" * 80)
+            logger.info("CHECKING FOR NODE SELECTORS")
+            logger.info("=" * 80)
+            logger.info("Checking if VMs have nodeSelector that would prevent migration...")
 
-        # Check if VMs have nodeSelectors and remove them
-        logger.info("\n" + "=" * 80)
-        logger.info("CHECKING FOR NODE SELECTORS")
-        logger.info("=" * 80)
-        logger.info("Checking if VMs have nodeSelector that would prevent migration...")
+            # Remove nodeSelectors from all VMs to ensure they can be migrated
+            removal_success = 0
+            removal_failed = 0
 
-        # Remove nodeSelectors from all VMs to ensure they can be migrated
-        removal_success = 0
-        removal_failed = 0
+            for ns in namespaces:
+                if remove_node_selectors(args.vm_name, ns, logger):
+                    removal_success += 1
+                else:
+                    removal_failed += 1
 
-        for ns in namespaces:
-            if remove_node_selectors(args.vm_name, ns, logger):
-                removal_success += 1
-            else:
-                removal_failed += 1
-
-        if removal_success > 0:
-            logger.info(f"\nRemoved nodeSelector from {removal_success} VMs")
-        if removal_failed > 0:
-            logger.warning(f"Failed to remove nodeSelector from {removal_failed} VMs")
-
+            if removal_success > 0:
+                logger.info(f"\nRemoved nodeSelector from {removal_success} VMs")
+            if removal_failed > 0:
+                logger.warning(f"Failed to remove nodeSelector from {removal_failed} VMs")
+        else:
+            logger.info("Skipping VM Verifications...")
         logger.info("VMs are ready for live migration!")
         logger.info("=" * 80)
 
-    # Phase 3: Perform Migration
+    # Phase 2: Perform Migration
     logger.info("\n" + "=" * 80)
     logger.info("PHASE 2: Live Migration")
     logger.info("=" * 80)
 
     migration_results = []
+    migration_phase_start = datetime.now()
 
     # Scenario 1: Sequential Migration
     if not args.parallel and not args.evacuate and not args.round_robin:
@@ -624,6 +640,7 @@ def main():
                     logger.error(f"[{ns}] Exception during migration: {e}")
                     migration_results.append((ns, False, 0.0, None, None, None))
 
+    total_migration_time = (datetime.now() - migration_phase_start).total_seconds()
     # Phase 4: Validation (Ping Test)
     if not args.skip_ping:
         logger.info("\n" + "=" * 80)
@@ -669,15 +686,16 @@ def main():
 
     # Print table
     if table_data:
-        print("\n" + "=" * 150)
-        print(f"{'Namespace':<25} {'Source Node':<30} {'Target Node':<30} {'Observed Time':<15} {'VMIM Time':<15} {'Status':<10}")
-        print("=" * 150)
+        logger.info(f"Total migration time for {len(migration_results)} VMs: {total_migration_time:.2f}s")
+        logger.info("\n" + "=" * 150)
+        logger.info(f"{'Namespace':<25} {'Source Node':<30} {'Target Node':<30} {'Observed Time':<15} {'VMIM Time':<15} {'Status':<10}")
+        logger.info("=" * 150)
 
         for row in table_data:
-            print(f"{row['namespace']:<25} {row['source_node']:<30} {row['target_node']:<30} "
+            logger.info(f"{row['namespace']:<25} {row['source_node']:<30} {row['target_node']:<30} "
                   f"{row['observed_duration']:<15} {row['vmim_duration']:<15} {row['status']:<10}")
 
-        print("=" * 150)
+        logger.info("=" * 150)
 
     # Statistics
     successful_migrations = sum(1 for _, success, _, _, _, _ in migration_results if success)
@@ -694,37 +712,60 @@ def main():
         vmim_durations = [vmim_duration for _, success, _, _, _, vmim_duration in migration_results
                          if success and vmim_duration is not None]
 
-        print("\n" + "=" * 80)
-        print("MIGRATION STATISTICS")
-        print("=" * 80)
-        print(f"\n  Total VMs:              {len(migration_results)}")
-        print(f"  Successful Migrations:  {successful_migrations}")
-        print(f"  Failed Migrations:      {failed_migrations}")
+        logger.info("\n" + "=" * 80)
+        logger.info("MIGRATION STATISTICS")
+        logger.info("=" * 80)
+        logger.info(f"\n  Total VMs:              {len(migration_results)}")
+        logger.info(f"  Successful Migrations:  {successful_migrations}")
+        logger.info(f"  Failed Migrations:      {failed_migrations}")
 
-        print(f"\n  Observed Time (Node Change Detection):")
-        print(f"    Average:              {avg_observed:.2f}s")
-        print(f"    Minimum:              {min_observed:.2f}s")
-        print(f"    Maximum:              {max_observed:.2f}s")
+        logger.info(f"\n  Observed Time (Node Change Detection):")
+        logger.info(f"    Average:              {avg_observed:.2f}s")
+        logger.info(f"    Minimum:              {min_observed:.2f}s")
+        logger.info(f"    Maximum:              {max_observed:.2f}s")
 
         if vmim_durations:
             avg_vmim = sum(vmim_durations) / len(vmim_durations)
             min_vmim = min(vmim_durations)
             max_vmim = max(vmim_durations)
 
-            print(f"\n  VMIM Time (Official KubeVirt Timestamps):")
-            print(f"    Average:              {avg_vmim:.2f}s")
-            print(f"    Minimum:              {min_vmim:.2f}s")
-            print(f"    Maximum:              {max_vmim:.2f}s")
+            logger.info(f"\n  VMIM Time (Official KubeVirt Timestamps):")
+            logger.info(f"    Average:              {avg_vmim:.2f}s")
+            logger.info(f"    Minimum:              {min_vmim:.2f}s")
+            logger.info(f"    Maximum:              {max_vmim:.2f}s")
 
             # Calculate difference
             avg_diff = avg_observed - avg_vmim
-            print(f"\n  Difference (Observed - VMIM):")
-            print(f"    Average:              {avg_diff:.2f}s")
-            print(f"    Note: Difference includes polling overhead (~2s) and status update delays")
+            logger.info(f"\n  Difference (Observed - VMIM):")
+            logger.info(f"    Average:              {avg_diff:.2f}s")
+            logger.info(f"    Note: Difference includes polling overhead (~2s) and status update delays")
         else:
-            print(f"\n  VMIM Time: Not available (timestamps not found)")
+            logger.info(f"\n  VMIM Time: Not available (timestamps not found)")
 
-        print("=" * 80)
+        logger.info("=" * 80)
+
+    # --- Save structured migration results if requested ---
+    if args.save_results:
+        timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+        suffix = f"{args.namespace_prefix}_{args.start}-{args.end}"
+        base_results_dir = args.results_folder
+        out_dir = os.path.join(base_results_dir, f"{timestamp}_live_migration_{suffix}")
+        os.makedirs(out_dir, exist_ok=True)
+        logger.info(f"Created results directory: {out_dir}")
+
+        # Save detailed and summary results in the correct folder
+        save_migration_results(
+            args,
+            migration_results,
+            base_dir=out_dir,
+            logger=logger,
+            total_time=total_migration_time
+        )
+
+        logger.info(f"Migration results saved under: {out_dir}")
+    else:
+        logger.info("Migration results not saved (use --save-results to enable).")
+
 
     # Cleanup
     if args.cleanup:
