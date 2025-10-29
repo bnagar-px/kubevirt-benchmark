@@ -211,8 +211,8 @@ Examples:
     parser.add_argument(
         '--results-folder',
         type=str,
-        default='results',
-        help='Base directory to store test results (default: ./results)'
+        default=os.path.join(os.path.dirname(os.getcwd()), 'results'),
+        help='Base directory to store test results (default: ../results)'
     )
 
     # Portworx version grouping
@@ -601,7 +601,7 @@ def main():
     logger.info(f"Poll interval: {args.poll_interval}s")
     logger.info(f"Ping timeout: {args.ping_timeout}s")
     logger.info("=" * 80)
-    NUM_DISKS_PER_VM = 1
+    num_disks_per_vm = 1
 
     if not args.px_version:
         args.px_version = get_px_version_from_cluster(logger, namespace=args.px_namespace)
@@ -633,8 +633,8 @@ def main():
             if not any(k in v for k in ['cloudInitNoCloud', 'cloudInitConfigDrive'])
         ]
 
-        NUM_DISKS_PER_VM = len(non_cloudinit_volumes)
-        logger.info(f"Detected {NUM_DISKS_PER_VM} disks (excluding cloud-init) in VM template")
+        num_disks_per_vm = len(non_cloudinit_volumes)
+        logger.info(f"Detected {num_disks_per_vm} disks (excluding cloud-init) in VM template")
 
     except Exception as e:
         logger.error(f"Failed to parse {args.vm_template}: {e}")
@@ -746,7 +746,7 @@ def main():
         suffix = f"{args.namespace_prefix}_{args.start}-{args.end}"
 
         # Construct versioned results path dynamically
-        out_dir = os.path.join(args.results_folder, args.px_version, f"{NUM_DISKS_PER_VM}-disk", f"{timestamp}_{suffix}")
+        out_dir = os.path.join(args.results_folder, args.px_version, f"{num_disks_per_vm}-disk", f"{timestamp}_{suffix}")
         os.makedirs(out_dir, exist_ok=True)
 
         logger.info(f"Created results directory: {out_dir}")

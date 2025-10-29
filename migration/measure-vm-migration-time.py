@@ -173,8 +173,8 @@ Examples:
     parser.add_argument(
         '--results-folder',
         type=str,
-        default='results',
-        help='Base directory to store test results (default: ./results)'
+        default=os.path.join(os.path.dirname(os.getcwd()), 'results'),
+        help='Base directory to store test results (default: ../results)'
     )
 
     return parser.parse_args()

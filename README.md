@@ -19,6 +19,7 @@ This suite provides automated performance testing tools to measure and validate 
 - **Multiple Storage Backends**: Support for both standard Portworx and Pure FlashArray Direct Access (FADA)
 - **Comprehensive Logging**: Detailed logs with timestamps and error tracking
 - **Flexible Configuration**: Command-line arguments for easy customization
+- **Interactive Results Dashboard**: Auto-generate rich HTML dashboards for all test results
 
 ## Prerequisites
 
@@ -54,7 +55,10 @@ kubevirt-benchmark-suite/
 ├── LICENSE                            # Apache 2.0 License
 ├── requirements.txt                   # Python dependencies
 │
-├── datasource-clone/                  # DataSource-based VM provisioning tests
+├── dashboard/                        # Interactive dashboard for test results
+│   └── generate_dashboard.py         # Dashboard generation script
+│   
+├── datasource-clone/                 # DataSource-based VM provisioning tests
 │   └── measure-vm-creation-time.py   # Main test script
 │
 ├── migration/                         # Live migration performance tests
@@ -183,6 +187,16 @@ python3 measure-vm-creation-time.py \
   --node-name worker-node-1 \
   --boot-storm \
   --log-file single-node-boot-storm-$(date +%Y%m%d-%H%M%S).log
+
+# Save results in JSON and CSV format to a directory
+python3 measure-vm-creation-time.py \
+  --start 1 \
+  --end 50 \
+  --vm-name rhel-9-vm \
+  --single-node \
+  --node-name worker-node-1 \
+  --boot-storm \
+  --save-results
 ```
 
 **What it does**:
@@ -327,27 +341,33 @@ vim far-template.yaml
 
 ### VM Creation Tests
 
-| Option | Description | Default |
-|--------|-------------|---------|
-| `--start` | Starting namespace index | 1 |
-| `--end` | Ending namespace index | 100 |
-| `--vm-name` | VM resource name | rhel-9-vm |
-| `--concurrency` | Max parallel monitoring threads | 50 |
-| `--ssh-pod` | Pod name for ping tests | ssh-test-pod |
-| `--ssh-pod-ns` | Namespace of SSH pod | default |
-| `--poll-interval` | Seconds between status checks | 1 |
-| `--ping-timeout` | Ping timeout in seconds | 600 |
-| `--log-file` | Output log file path | stdout |
-| `--log-level` | Logging level (DEBUG/INFO/WARNING/ERROR) | INFO |
-| `--namespace-prefix` | Prefix for test namespaces | kubevirt-perf-test |
-| `--namespace-batch-size` | Namespaces to create in parallel | 20 |
-| `--boot-storm` | Enable boot storm testing | false |
-| `--single-node` | Run all VMs on a single node | false |
-| `--node-name` | Specific node to use (requires --single-node) | auto-select |
-| `--cleanup` | Delete resources and namespaces after test | false |
-| `--cleanup-on-failure` | Clean up even if tests fail | false |
-| `--dry-run-cleanup` | Show what would be deleted without deleting | false |
-| `--yes` | Skip confirmation prompt for cleanup | false |
+| Option                   | Description                                                                            | Default            |
+|--------------------------|----------------------------------------------------------------------------------------|--------------------|
+| `--start`                | Starting namespace index                                                               | 1                  |
+| `--end`                  | Ending namespace index                                                                 | 100                |
+| `--vm-name`              | VM resource name                                                                       | rhel-9-vm          |
+| `--concurrency`          | Max parallel monitoring threads                                                        | 50                 |
+| `--ssh-pod`              | Pod name for ping tests                                                                | ssh-test-pod       |
+| `--ssh-pod-ns`           | Namespace of SSH pod                                                                   | default            |
+| `--poll-interval`        | Seconds between status checks                                                          | 1                  |
+| `--ping-timeout`         | Ping timeout in seconds                                                                | 600                |
+| `--log-file`             | Output log file path                                                                   | stdout             |
+| `--log-level`            | Logging level (DEBUG/INFO/WARNING/ERROR)                                               | INFO               |
+| `--namespace-prefix`     | Prefix for test namespaces                                                             | kubevirt-perf-test |
+| `--namespace-batch-size` | Namespaces to create in parallel                                                       | 20                 |
+| `--boot-storm`           | Enable boot storm testing                                                              | false              |
+| `--single-node`          | Run all VMs on a single node                                                           | false              |
+| `--node-name`            | Specific node to use (requires --single-node)                                          | auto-select        |
+| `--cleanup`              | Delete resources and namespaces after test                                             | false              |
+| `--cleanup-on-failure`   | Clean up even if tests fail                                                            | false              |
+| `--dry-run-cleanup`      | Show what would be deleted without deleting                                            | false              |
+| `--yes`                  | Skip confirmation prompt for cleanup                                                   | false              |
+| `--save_results`         | Save detailed results (JSON and CSV) inside a timestamped folder under results/ folder | false              |
+| `--results_folder`       | Base directory to store test results                                                   | ../results         |
+| `--px_version`           | Portworx version to include in results path (auto-detect if not provided)              | auto-detect        |
+| `--px_namespace`         | Default namespace where Portworx is installed                                          | Portworx           |
+
+
 
 ### Recovery Tests
 
@@ -609,7 +629,7 @@ CLEANUP SUMMARY
 3. **Start Small**: Begin with 5-10 VMs to validate your setup before scaling
 4. **Monitor Resources**: Watch cluster resource utilization during tests
 5. **Use Dedicated Namespaces**: Tests create namespaces with predictable names for easy cleanup
-6. **Save Results**: Always use `--log-file` to preserve test results
+6. **Save Results**: Use `--save-results` to preserve test results data for dashboard generation
 7. **Cleanup**: Remove test resources after completion to free cluster resources
 8. **Network Testing**: Deploy an SSH pod in advance for ping tests
 

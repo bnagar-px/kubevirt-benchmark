@@ -108,7 +108,6 @@ def df_to_html_table(df: pd.DataFrame, table_id: str) -> str:
     if df is None or df.empty:
         return f"<p>No data found for {table_id}</p>"
 
-    # ✅ Friendly column names (applies to both summary and detailed tables)
     column_rename_map = {
         "namespace": "Namespace",
         "running_time_sec": "Running Time (s)",
@@ -125,11 +124,9 @@ def df_to_html_table(df: pd.DataFrame, table_id: str) -> str:
     # Rename columns if present
     df = df.rename(columns={k: v for k, v in column_rename_map.items() if k in df.columns})
 
-    # ✅ Round all numeric columns to 2 decimals
     numeric_cols = df.select_dtypes(include="number").columns
     df[numeric_cols] = df[numeric_cols].round(2)
 
-    # ✅ Convert boolean True/False to nicer values
     if "Success" in df.columns:
         df["Success"] = df["Success"].map({True: "✅ True", False: "❌ False"})
 
@@ -478,7 +475,7 @@ $(document).ready(function() {{
 
 # ---------------- Discover + Build ----------------
 def main():
-    parser = argparse.ArgumentParser(description="Generate KubeVirt Performance Dashboard (PX version → disk → VM size).")
+    parser = argparse.ArgumentParser(description="Generate KubeVirt Performance Dashboard (PX version → disk → Total VMs).")
     parser.add_argument("--days", type=int, default=15)
     parser.add_argument("--base-dir", type=str, default="results")
     parser.add_argument("--output-html", type=str, default="results_dashboard.html")
@@ -516,7 +513,7 @@ def main():
 
     out = Path(args.output_html)
     out.write_text(build_html_page(px_nav, px_body), encoding="utf-8")
-    print(f"✅ Dashboard generated: {out.absolute()}")
+    print(f"Dashboard generated: {out.absolute()}")
 
 
 if __name__ == "__main__":
