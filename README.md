@@ -45,17 +45,17 @@ The user running these tests needs:
 ## Repository Structure
 
 ```
-kubevirt-performance-testing/
+kubevirt-benchmark-suite/
 ├── README.md                          # This file
 ├── QUICKSTART.md                      # 5-minute quick start guide
 ├── SETUP.md                           # Detailed setup instructions
+├── CLEANUP_GUIDE.md                   # Comprehensive cleanup guide
 ├── CONTRIBUTING.md                    # Contribution guidelines
 ├── LICENSE                            # Apache 2.0 License
 ├── requirements.txt                   # Python dependencies
 │
 ├── datasource-clone/                  # DataSource-based VM provisioning tests
-│   ├── measure-vm-creation-time.py   # Main test script
-│   └── vm-template.yaml              # VM YAML template
+│   └── measure-vm-creation-time.py   # Main test script
 │
 ├── migration/                         # Live migration performance tests
 │   └── measure-vm-migration-time.py  # Main migration test script
@@ -68,11 +68,17 @@ kubevirt-performance-testing/
 │
 ├── utils/                             # Shared utilities
 │   ├── common.py                     # Common functions and logging
+│   ├── validate_cluster.py           # Cluster validation script
+│   ├── apply_template.sh             # Template helper script
 │   └── README.md                     # Utils documentation
 │
 └── examples/                          # Example configurations
     ├── storage-classes/              # Sample StorageClass definitions
-    ├── vm-templates/                 # Sample VM templates
+    │   └── portworx/                 # Portworx storage classes
+    │       ├── portworx-fada-sc.yaml # Pure FlashArray Direct Access SC
+    │       └── portworx-raw-sc.yaml  # Standard Portworx SC
+    ├── vm-templates/                 # VM template files
+    │   └── vm-template.yaml          # Templated VM configuration
     ├── ssh-pod.yaml                  # SSH test pod for network tests
     ├── sequential-migration.sh       # Sequential migration example
     ├── parallel-migration.sh         # Parallel migration example
@@ -85,8 +91,8 @@ kubevirt-performance-testing/
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/your-org/kubevirt-perf-testing.git
-cd kubevirt-perf-testing
+git clone https://github.com/your-org/kubevirt-benchmark-suite.git
+cd kubevirt-benchmark-suite
 ```
 
 ### 2. Install Dependencies
@@ -95,16 +101,32 @@ cd kubevirt-perf-testing
 pip3 install -r requirements.txt
 ```
 
-### 3. Configure Your Environment
+### 3. Validate Your Cluster
 
-Ensure kubectl is configured to access your OpenShift cluster:
+Validate that your cluster is ready for benchmarks:
 
 ```bash
-kubectl cluster-info
-kubectl get nodes
+python3 utils/validate_cluster.py --storage-class portworx-fada-sc
 ```
 
-### 4. Run a Basic Test
+See [VALIDATION_GUIDE.md](VALIDATION_GUIDE.md) for detailed validation options.
+
+### 4. Configure VM Templates
+
+Apply template variables to create customized VM configurations:
+
+```bash
+./utils/apply_template.sh \
+  --output /tmp/my-vm.yaml \
+  --vm-name my-test-vm \
+  --storage-class portworx-fada-sc \
+  --memory 4Gi \
+  --cpu-cores 2
+```
+
+See [TEMPLATE_GUIDE.md](TEMPLATE_GUIDE.md) for detailed template usage.
+
+### 5. Run a Basic Test
 
 Test VM creation with 10 VMs:
 
@@ -269,6 +291,15 @@ python3 measure-vm-migration-time.py \
 
 **See example scripts**: `examples/sequential-migration.sh`, `examples/parallel-migration.sh`, `examples/evacuation-scenario.sh`, `examples/round-robin-migration.sh`
 
+**Cleanup after migration tests**:
+```bash
+# Clean up VMIMs only (VMs remain)
+python3 measure-vm-migration-time.py --start 1 --end 100 --cleanup
+
+# Clean up everything if VMs were created by the test
+python3 measure-vm-migration-time.py --start 1 --end 100 --create-vms --cleanup
+```
+
 ---
 
 ### Scenario 5: Failure and Recovery Testing
@@ -313,7 +344,10 @@ vim far-template.yaml
 | `--boot-storm` | Enable boot storm testing | false |
 | `--single-node` | Run all VMs on a single node | false |
 | `--node-name` | Specific node to use (requires --single-node) | auto-select |
-| `--cleanup` | Delete resources after test | false |
+| `--cleanup` | Delete resources and namespaces after test | false |
+| `--cleanup-on-failure` | Clean up even if tests fail | false |
+| `--dry-run-cleanup` | Show what would be deleted without deleting | false |
+| `--yes` | Skip confirmation prompt for cleanup | false |
 
 ### Recovery Tests
 
@@ -408,14 +442,177 @@ Enable debug logging for detailed troubleshooting:
 python3 measure-vm-creation-time.py --log-level DEBUG --start 1 --end 5
 ```
 
+
+## Utility Tools
+
+### Cluster Validation
+
+Validate your cluster before running benchmarks:
+
+```bash
+# Basic validation
+python3 utils/validate_cluster.py --storage-class portworx-fada-sc
+
+# Comprehensive validation
+python3 utils/validate_cluster.py --all --storage-class portworx-fada-sc
+```
+
+See [VALIDATION_GUIDE.md](VALIDATION_GUIDE.md) for details.
+
+### Template Management
+
+Apply template variables to VM configurations:
+
+```bash
+# Basic usage
+./utils/apply_template.sh -o /tmp/vm.yaml -n my-vm -s portworx-fada-sc
+
+# Full customization
+./utils/apply_template.sh \
+  -o /tmp/custom-vm.yaml \
+  -n high-perf-vm \
+  -s portworx-raw-sc \
+  --storage-size 100Gi \
+  --memory 8Gi \
+  --cpu-cores 4
+```
+
+See [TEMPLATE_GUIDE.md](TEMPLATE_GUIDE.md) for details.
+
+
+## Cleanup
+
+### Automatic Cleanup
+
+All test scripts support comprehensive cleanup with the following options:
+
+#### VM Creation Tests
+```bash
+# Clean up after successful test
+python3 measure-vm-creation-time.py --start 1 --end 50 --cleanup
+
+# Clean up even if test fails
+python3 measure-vm-creation-time.py --start 1 --end 50 --cleanup-on-failure
+
+# Preview what would be deleted (dry run)
+python3 measure-vm-creation-time.py --start 1 --end 50 --dry-run-cleanup
+
+# Skip confirmation prompt (use with caution)
+python3 measure-vm-creation-time.py --start 1 --end 50 --cleanup --yes
+```
+
+**What gets cleaned up:**
+- All VMs created during the test
+- All DataVolumes (DVs) associated with the VMs
+- All PersistentVolumeClaims (PVCs)
+- All test namespaces (kubevirt-perf-test-1 through kubevirt-perf-test-N)
+
+#### Migration Tests
+```bash
+# Clean up VMIMs and optionally VMs/namespaces
+cd migration
+python3 measure-vm-migration-time.py --start 1 --end 50 --create-vms --cleanup
+
+# Dry run to see what would be deleted
+python3 measure-vm-migration-time.py --start 1 --end 50 --dry-run-cleanup
+```
+
+**What gets cleaned up:**
+- All VirtualMachineInstanceMigration (VMIM) objects
+- VMs and namespaces (only if created with `--create-vms`)
+- Node selector modifications are automatically cleaned
+
+#### Failure Recovery Tests
+```bash
+# Clean up FAR resources and annotations
+cd failure-recovery
+python3 measure-recovery-time.py \
+  --start 1 --end 60 \
+  --vm-name rhel-9-vm \
+  --cleanup \
+  --far-name my-far-resource \
+  --failed-node worker-1
+
+# Also delete VMs and namespaces
+python3 measure-recovery-time.py \
+  --start 1 --end 60 \
+  --vm-name rhel-9-vm \
+  --cleanup \
+  --cleanup-vms \
+  --far-name my-far-resource \
+  --failed-node worker-1
+```
+
+**What gets cleaned up:**
+- FenceAgentsRemediation (FAR) custom resources
+- FAR annotations from VMs
+- Uncordon nodes that were marked as failed
+- Optionally: VMs, DataVolumes, PVCs, and namespaces (with `--cleanup-vms`)
+
+### Manual Cleanup
+
+If automatic cleanup fails or you need to clean up manually:
+
+```bash
+# Delete specific namespace range
+for i in {1..50}; do
+  kubectl delete namespace kubevirt-perf-test-$i &
+done
+wait
+
+# Force delete stuck namespaces
+kubectl delete namespace kubevirt-perf-test-1 --force --grace-period=0
+
+# Clean up VMIMs
+kubectl delete virtualmachineinstancemigration --all -n kubevirt-perf-test-1
+
+# Remove FAR resources
+kubectl delete fenceagentsremediation my-far-resource
+
+# Uncordon nodes
+kubectl uncordon worker-1
+```
+
+### Safety Features
+
+1. **Confirmation Prompt**: When cleaning up more than 10 namespaces, you'll be prompted to confirm (unless `--yes` is used)
+2. **Dry Run Mode**: Use `--dry-run-cleanup` to preview what would be deleted
+3. **Namespace Prefix Verification**: Only deletes resources matching the test namespace prefix
+4. **Detailed Logging**: All cleanup operations are logged with timestamps
+5. **Error Handling**: Cleanup failures don't mask test results
+6. **Interrupt Handling**: Ctrl+C during tests triggers cleanup if `--cleanup` or `--cleanup-on-failure` is set
+
+### Cleanup Summary
+
+After cleanup completes, you'll see a summary like:
+
+```
+================================================================================
+CLEANUP SUMMARY
+================================================================================
+  Namespaces Processed:        50
+  Namespaces Deleted:          50
+  VMs Deleted:                 50
+  DataVolumes Deleted:         50
+  PVCs Deleted:                50
+  VMIMs Deleted:               25
+  Errors:                      0
+================================================================================
+```
+> **📖 For comprehensive cleanup documentation, see [CLEANUP_GUIDE.md](CLEANUP_GUIDE.md)**
+
+
 ## Best Practices
 
-1. **Start Small**: Begin with 5-10 VMs to validate your setup before scaling
-2. **Monitor Resources**: Watch cluster resource utilization during tests
-3. **Use Dedicated Namespaces**: Tests create namespaces with predictable names for easy cleanup
-4. **Save Results**: Always use `--log-file` to preserve test results
-5. **Cleanup**: Remove test resources after completion to free cluster resources
-6. **Network Testing**: Deploy an SSH pod in advance for ping tests
+1. **Validate First**: Always run cluster validation before benchmarks
+2. **Use Templates**: Use the template helper script for consistent VM configurations
+3. **Start Small**: Begin with 5-10 VMs to validate your setup before scaling
+4. **Monitor Resources**: Watch cluster resource utilization during tests
+5. **Use Dedicated Namespaces**: Tests create namespaces with predictable names for easy cleanup
+6. **Save Results**: Always use `--log-file` to preserve test results
+7. **Cleanup**: Remove test resources after completion to free cluster resources
+8. **Network Testing**: Deploy an SSH pod in advance for ping tests
+
 
 ## Contributing
 
@@ -429,8 +626,6 @@ This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENS
 
 For issues, questions, or contributions:
 - Open an issue on GitHub
-- Contact: [your-support-email]
-- Documentation: [your-docs-url]
 
 ## Acknowledgments
 

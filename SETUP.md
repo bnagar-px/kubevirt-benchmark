@@ -17,8 +17,8 @@ Before starting, ensure you have:
 ## Step 1: Clone the Repository
 
 ```bash
-git clone https://github.com/your-org/kubevirt-perf-testing.git
-cd kubevirt-perf-testing
+git clone https://github.com/your-org/kubevirt-benchmark-suite.git
+cd kubevirt-benchmark-suite
 ```
 
 ## Step 2: Configure Storage Classes
@@ -27,14 +27,14 @@ cd kubevirt-perf-testing
 
 1. Review the storage class configuration:
 ```bash
-cat examples/storage-classes/portworx-raw-sc.yaml
+cat examples/storage-classes/portworx/portworx-raw-sc.yaml
 ```
 
 2. Update parameters if needed (replication factor, I/O priority, etc.)
 
 3. Create the storage class:
 ```bash
-kubectl apply -f examples/storage-classes/portworx-raw-sc.yaml
+kubectl apply -f examples/storage-classes/portworx/portworx-raw-sc.yaml
 ```
 
 4. Verify:
@@ -46,7 +46,7 @@ kubectl get sc portworx-raw-sc
 
 1. Review the FADA storage class:
 ```bash
-cat examples/storage-classes/portworx-fada-sc.yaml
+cat examples/storage-classes/portworx/portworx-fada-sc.yaml
 ```
 
 2. **Important**: Update the `pure_fa_pod_name` parameter with your FlashArray pod name:
@@ -55,13 +55,13 @@ cat examples/storage-classes/portworx-fada-sc.yaml
 kubectl get pods -n kube-system | grep pure
 
 # Edit the storage class
-vim examples/storage-classes/portworx-fada-sc.yaml
+vim examples/storage-classes/portworx/portworx-fada-sc.yaml
 # Update: pure_fa_pod_name: "your-actual-flasharray-pod-name"
 ```
 
 3. Create the storage class:
 ```bash
-kubectl apply -f examples/storage-classes/portworx-fada-sc.yaml
+kubectl apply -f examples/storage-classes/portworx/portworx-fada-sc.yaml
 ```
 
 4. Verify:
@@ -106,15 +106,19 @@ kubectl get datasource -n openshift-virtualization-os-images
 
 ### 4.2: Update VM Template
 
-Edit the VM template:
+Edit the VM template to replace placeholders:
 ```bash
-vim datasource-clone/vm-template.yaml
+# Option 1: Use sed to replace the storage class template variable
+sed -i 's/{{STORAGE_CLASS_NAME}}/portworx-fada-sc/g' examples/vm-templates/vm-template.yaml
+
+# Option 2: Manually edit the template
+vim examples/vm-templates/vm-template.yaml
 ```
 
-Update:
-- `sourceRef.name`: Your DataSource name
-- `storageClassName`: Your storage class name (typically FADA)
-- `storage`: Size as needed
+Update the following template variables:
+- `{{STORAGE_CLASS_NAME}}`: Replace with your storage class name (e.g., `portworx-fada-sc` or `portworx-raw-sc`)
+- `sourceRef.name`: Update DataSource name if different from `rhel9`
+- `storage`: Adjust size as needed (default: 30Gi)
 
 ## Step 5: Setup for Failure Recovery Tests
 
@@ -148,7 +152,7 @@ Before running full tests, verify FAR works on a single node:
 ```bash
 # Create a test namespace with a VM
 kubectl create namespace far-test
-kubectl apply -f datasource-clone/vm-template.yaml -n far-test
+kubectl apply -f examples/vm-templates/vm-template.yaml -n far-test
 
 # Wait for VM to be running
 kubectl get vm -n far-test -w
@@ -273,7 +277,7 @@ kubectl auth can-i create namespace
 python3 --version  # Should be 3.6+
 
 # Check if utils module is accessible
-cd kubevirt-perf-testing
+cd kubevirt-benchmark-suite
 python3 -c "import sys; sys.path.insert(0, '.'); from utils.common import setup_logging"
 ```
 

@@ -12,8 +12,8 @@ Get started with KubeVirt performance testing in 5 minutes!
 
 ```bash
 # Clone the repository
-git clone https://github.com/your-org/kubevirt-perf-testing.git
-cd kubevirt-perf-testing
+git clone https://github.com/your-org/kubevirt-benchmark-suite.git
+cd kubevirt-benchmark-suite
 
 # Make scripts executable
 chmod +x datasource-clone/*.py migration/*.py failure-recovery/*.py failure-recovery/*.sh
@@ -37,7 +37,9 @@ kubectl wait --for=condition=Ready pod/ssh-test-pod -n default --timeout=300s
 cd datasource-clone
 
 # Update VM template with your storage class
-sed -i 's/portworx-fada-sc/YOUR_STORAGE_CLASS/g' vm-template.yaml
+# Replace {{STORAGE_CLASS_NAME}} with your actual storage class
+# Options: portworx-fada-sc, portworx-raw-sc, or your custom storage class
+sed -i 's/{{STORAGE_CLASS_NAME}}/portworx-fada-sc/g' ../examples/vm-templates/vm-template.yaml
 
 # Run a small test (5 VMs)
 python3 measure-vm-creation-time.py --start 1 --end 5

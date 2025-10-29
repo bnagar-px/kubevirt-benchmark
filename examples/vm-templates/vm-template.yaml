@@ -1,0 +1,139 @@
+# KubeVirt VM Template
+#
+# Template Variables (replace before applying):
+#   {{VM_NAME}}              - VM name (e.g., rhel-9-vm)
+#   {{STORAGE_CLASS_NAME}}   - Storage class name (e.g., portworx-fada-sc, portworx-raw-sc)
+#   {{DATASOURCE_NAME}}      - DataSource name (e.g., rhel9, fedora)
+#   {{DATASOURCE_NAMESPACE}} - DataSource namespace (e.g., openshift-virtualization-os-images)
+#   {{STORAGE_SIZE}}         - Root disk storage size (e.g., 30Gi)
+#   {{VM_MEMORY}}            - VM memory (e.g., 2048M, 4Gi)
+#   {{VM_CPU_CORES}}         - Number of CPU cores (e.g., 1, 2, 4)
+#
+# Usage:
+#   sed -i 's/{{STORAGE_CLASS_NAME}}/portworx-fada-sc/g' vm-template.yaml
+#   sed -i 's/{{VM_NAME}}/my-vm/g' vm-template.yaml
+#   kubectl apply -f vm-template.yaml -n <namespace>
+#
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+
+  name: {{VM_NAME}}
+spec:
+  dataVolumeTemplates:
+    - metadata:
+        creationTimestamp: null
+        name: {{VM_NAME}}-volume
+      spec:
+        sourceRef:
+          kind: DataSource
+          name: {{DATASOURCE_NAME}}
+          namespace: {{DATASOURCE_NAMESPACE}}
+        storage:
+          resources:
+            requests:
+              storage: {{STORAGE_SIZE}}
+          storageClassName: {{STORAGE_CLASS_NAME}}
+          volumeMode: Block
+  runStrategy: Always
+  template:
+    spec:
+     
+
+
+  
+      domain:
+        cpu:
+          cores: {{VM_CPU_CORES}}
+        devices:
+          disks:
+            - name: rootdisk
+              bootOrder: 1
+              disk:
+                bus: virtio
+            - disk:
+                bus: virtio
+              name: cloudinitdisk
+            # - name: data-disk-1
+            #   disk:
+            #     bus: virtio
+            # - name: data-disk-2
+            #   disk:
+            #     bus: virtio
+  
+            
+
+          interfaces:
+            - masquerade: {}
+              name: default
+        features:
+          acpi: {}
+          smm:
+            enabled: true
+        resources:
+          requests:
+            cpu: {{VM_CPU_CORES}}
+            memory: {{VM_MEMORY}}
+      networks:
+        - name: default
+          pod: {}
+      tolerations:
+        - key: node-role.kubernetes.io/master
+          operator: Exists
+          effect: NoSchedule
+        - key: node-role.kubernetes.io/control-plane
+          operator: Exists
+          effect: NoSchedule
+      volumes:
+        - dataVolume:
+            name: {{VM_NAME}}-volume
+          name: rootdisk
+        # - name: data-disk-1
+        #   persistentVolumeClaim:
+        #     claimName: data-disk-1
+        # - name: data-disk-2
+        #   persistentVolumeClaim:
+        #     claimName: data-disk-2
+  
+        
+        - cloudInitNoCloud:
+            userData: |
+              #cloud-config
+              chpasswd:
+                expire: false
+              password: Password1
+              user: rhel
+          name: cloudinitdisk
+# ---
+# apiVersion: v1
+# kind: PersistentVolumeClaim
+# metadata:
+#   name: data-disk-1
+#   labels:
+#     portworx.io/kubevirt: "true"
+# spec:
+#   storageClassName: {{STORAGE_CLASS_NAME}}
+#   volumeMode: Block
+#   accessModes:
+#     - ReadWriteMany
+#   resources:
+#     requests:
+#       storage: 20Gi
+# ---
+# apiVersion: v1
+# kind: PersistentVolumeClaim
+# metadata:
+#   name: data-disk-2
+#   labels:
+#     portworx.io/kubevirt: "true"
+# spec:
+#   storageClassName: {{STORAGE_CLASS_NAME}}
+#   volumeMode: Block
+#   accessModes:
+#     - ReadWriteMany
+#   resources:
+#     requests:
+#       storage: 30Gi
+
+
+      
