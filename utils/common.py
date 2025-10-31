@@ -1579,17 +1579,17 @@ def print_summary_table(results: List[Tuple], title: str = "Performance Test Sum
 def validate_prerequisites(ssh_pod: str, ssh_pod_ns: str, logger: logging.Logger) -> bool:
     """
     Validate that prerequisites are met before running tests.
-    
+
     Args:
         ssh_pod: SSH pod name
         ssh_pod_ns: SSH pod namespace
         logger: Logger instance
-    
+
     Returns:
         True if all prerequisites are met, False otherwise
     """
     logger.info("Validating prerequisites...")
-    
+
     # Check kubectl connectivity
     try:
         run_kubectl_command(['cluster-info'], logger=logger)
@@ -1612,6 +1612,378 @@ def validate_prerequisites(ssh_pod: str, ssh_pod_ns: str, logger: logging.Logger
             logger.warning("  Ping tests will fail. Create an SSH pod or skip ping tests.")
     except Exception as e:
         logger.warning(f"[WARN] Error checking SSH pod: {e}")
-    
+
     return True
+
+
+def restart_vm(vm_name: str, namespace: str, logger: Optional[logging.Logger] = None) -> bool:
+    """
+    Restart a VM by stopping and starting it.
+
+    Args:
+        vm_name: VM name
+        namespace: Namespace name
+        logger: Logger instance
+
+    Returns:
+        True if restart successful, False otherwise
+    """
+    try:
+        if logger:
+            logger.info(f"[{namespace}] Restarting VM {vm_name}")
+
+        # Stop the VM
+        if not stop_vm(vm_name, namespace, logger):
+            return False
+
+        # Wait for VM to stop
+        if not wait_for_vm_stopped(vm_name, namespace, timeout=300, logger=logger):
+            if logger:
+                logger.error(f"[{namespace}] VM {vm_name} did not stop in time")
+            return False
+
+        # Start the VM
+        if not start_vm(vm_name, namespace, logger):
+            return False
+
+        if logger:
+            logger.info(f"[{namespace}] VM {vm_name} restarted successfully")
+        return True
+
+    except Exception as e:
+        if logger:
+            logger.error(f"[{namespace}] Failed to restart VM {vm_name}: {e}")
+        return False
+
+
+def resize_pvc(pvc_name: str, namespace: str, new_size: str,
+               logger: Optional[logging.Logger] = None) -> bool:
+    """
+    Resize a PersistentVolumeClaim.
+
+    Args:
+        pvc_name: PVC name
+        namespace: Namespace name
+        new_size: New size (e.g., "40Gi")
+        logger: Logger instance
+
+    Returns:
+        True if resize successful, False otherwise
+    """
+    try:
+        if logger:
+            logger.info(f"[{namespace}] Resizing PVC {pvc_name} to {new_size}")
+
+        # Patch the PVC with new size
+        patch = json.dumps({
+            "spec": {
+                "resources": {
+                    "requests": {
+                        "storage": new_size
+                    }
+                }
+            }
+        })
+
+        returncode, stdout, stderr = run_kubectl_command(
+            ['patch', 'pvc', pvc_name, '-n', namespace, '--type=merge', '-p', patch],
+            check=False,
+            logger=logger
+        )
+
+        if returncode != 0:
+            if logger:
+                logger.error(f"[{namespace}] Failed to resize PVC {pvc_name}: {stderr}")
+            return False
+
+        if logger:
+            logger.info(f"[{namespace}] PVC {pvc_name} resize initiated to {new_size}")
+        return True
+
+    except Exception as e:
+        if logger:
+            logger.error(f"[{namespace}] Failed to resize PVC {pvc_name}: {e}")
+        return False
+
+
+def wait_for_pvc_resize(pvc_name: str, namespace: str, expected_size: str,
+                        timeout: int = 600, poll_interval: int = 5,
+                        logger: Optional[logging.Logger] = None) -> bool:
+    """
+    Wait for PVC resize to complete.
+
+    Args:
+        pvc_name: PVC name
+        namespace: Namespace name
+        expected_size: Expected size after resize (e.g., "40Gi")
+        timeout: Timeout in seconds
+        poll_interval: Polling interval in seconds
+        logger: Logger instance
+
+    Returns:
+        True if resize completed, False on timeout
+    """
+    start_time = time.time()
+
+    while time.time() - start_time < timeout:
+        try:
+            returncode, stdout, stderr = run_kubectl_command(
+                ['get', 'pvc', pvc_name, '-n', namespace, '-o', 'json'],
+                check=False,
+                logger=logger
+            )
+
+            if returncode == 0:
+                pvc_data = json.loads(stdout)
+                status = pvc_data.get('status', {})
+                capacity = status.get('capacity', {}).get('storage', '')
+
+                # Check if resize is complete
+                if capacity == expected_size:
+                    if logger:
+                        logger.info(f"[{namespace}] PVC {pvc_name} resized to {capacity}")
+                    return True
+
+                # Check for resize conditions
+                conditions = status.get('conditions', [])
+                for condition in conditions:
+                    if condition.get('type') == 'Resizing' and condition.get('status') == 'True':
+                        if logger:
+                            logger.debug(f"[{namespace}] PVC {pvc_name} is resizing...")
+                    elif condition.get('type') == 'FileSystemResizePending':
+                        if logger:
+                            logger.debug(f"[{namespace}] PVC {pvc_name} filesystem resize pending...")
+
+            time.sleep(poll_interval)
+
+        except Exception as e:
+            if logger:
+                logger.error(f"[{namespace}] Error checking PVC resize status: {e}")
+            time.sleep(poll_interval)
+
+    if logger:
+        logger.error(f"[{namespace}] Timeout waiting for PVC {pvc_name} resize")
+    return False
+
+
+def create_vm_snapshot(vm_name: str, snapshot_name: str, namespace: str,
+                       logger: Optional[logging.Logger] = None) -> bool:
+    """
+    Create a VirtualMachineSnapshot.
+
+    Args:
+        vm_name: VM name to snapshot
+        snapshot_name: Snapshot name
+        namespace: Namespace name
+        logger: Logger instance
+
+    Returns:
+        True if snapshot created successfully, False otherwise
+    """
+    try:
+        if logger:
+            logger.info(f"[{namespace}] Creating snapshot {snapshot_name} for VM {vm_name}")
+
+        # Create snapshot YAML
+        snapshot_yaml = f"""apiVersion: snapshot.kubevirt.io/v1alpha1
+kind: VirtualMachineSnapshot
+metadata:
+  name: {snapshot_name}
+  namespace: {namespace}
+spec:
+  source:
+    apiGroup: kubevirt.io
+    kind: VirtualMachine
+    name: {vm_name}
+"""
+
+        # Apply snapshot
+        process = subprocess.Popen(
+            ['kubectl', 'apply', '-f', '-'],
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True
+        )
+        stdout, stderr = process.communicate(input=snapshot_yaml)
+
+        if process.returncode != 0:
+            if logger:
+                logger.error(f"[{namespace}] Failed to create snapshot: {stderr}")
+            return False
+
+        if logger:
+            logger.info(f"[{namespace}] Snapshot {snapshot_name} created")
+        return True
+
+    except Exception as e:
+        if logger:
+            logger.error(f"[{namespace}] Failed to create snapshot {snapshot_name}: {e}")
+        return False
+
+
+def wait_for_snapshot_ready(snapshot_name: str, namespace: str, timeout: int = 600,
+                            poll_interval: int = 5, logger: Optional[logging.Logger] = None) -> bool:
+    """
+    Wait for VirtualMachineSnapshot to be ready.
+
+    Args:
+        snapshot_name: Snapshot name
+        namespace: Namespace name
+        timeout: Timeout in seconds
+        poll_interval: Polling interval in seconds
+        logger: Logger instance
+
+    Returns:
+        True if snapshot is ready, False on timeout
+    """
+    start_time = time.time()
+
+    while time.time() - start_time < timeout:
+        try:
+            returncode, stdout, stderr = run_kubectl_command(
+                ['get', 'vmsnapshot', snapshot_name, '-n', namespace, '-o', 'json'],
+                check=False,
+                logger=logger
+            )
+
+            if returncode == 0:
+                snapshot_data = json.loads(stdout)
+                status = snapshot_data.get('status', {})
+                ready_to_use = status.get('readyToUse', False)
+
+                if ready_to_use:
+                    if logger:
+                        logger.info(f"[{namespace}] Snapshot {snapshot_name} is ready")
+                    return True
+
+                # Check for errors
+                conditions = status.get('conditions', [])
+                for condition in conditions:
+                    if condition.get('type') == 'Ready' and condition.get('status') == 'False':
+                        reason = condition.get('reason', 'Unknown')
+                        message = condition.get('message', '')
+                        if logger:
+                            logger.warning(f"[{namespace}] Snapshot not ready: {reason} - {message}")
+
+            time.sleep(poll_interval)
+
+        except Exception as e:
+            if logger:
+                logger.error(f"[{namespace}] Error checking snapshot status: {e}")
+            time.sleep(poll_interval)
+
+    if logger:
+        logger.error(f"[{namespace}] Timeout waiting for snapshot {snapshot_name}")
+    return False
+
+
+def delete_vm_snapshot(snapshot_name: str, namespace: str,
+                       logger: Optional[logging.Logger] = None) -> bool:
+    """
+    Delete a VirtualMachineSnapshot.
+
+    Args:
+        snapshot_name: Snapshot name
+        namespace: Namespace name
+        logger: Logger instance
+
+    Returns:
+        True if deleted successfully, False otherwise
+    """
+    try:
+        returncode, stdout, stderr = run_kubectl_command(
+            ['delete', 'vmsnapshot', snapshot_name, '-n', namespace],
+            check=False,
+            logger=logger
+        )
+
+        if returncode == 0:
+            if logger:
+                logger.info(f"[{namespace}] Deleted snapshot {snapshot_name}")
+            return True
+        else:
+            if logger:
+                logger.error(f"[{namespace}] Failed to delete snapshot: {stderr}")
+            return False
+
+    except Exception as e:
+        if logger:
+            logger.error(f"[{namespace}] Failed to delete snapshot {snapshot_name}: {e}")
+        return False
+
+
+def get_pvc_size(pvc_name: str, namespace: str, logger: Optional[logging.Logger] = None) -> Optional[str]:
+    """
+    Get current size of a PVC.
+
+    Args:
+        pvc_name: PVC name
+        namespace: Namespace name
+        logger: Logger instance
+
+    Returns:
+        PVC size as string (e.g., "30Gi") or None on error
+    """
+    try:
+        returncode, stdout, stderr = run_kubectl_command(
+            ['get', 'pvc', pvc_name, '-n', namespace, '-o', 'json'],
+            check=False,
+            logger=logger
+        )
+
+        if returncode == 0:
+            pvc_data = json.loads(stdout)
+            size = pvc_data.get('status', {}).get('capacity', {}).get('storage', '')
+            return size if size else None
+
+        return None
+
+    except Exception as e:
+        if logger:
+            logger.error(f"[{namespace}] Failed to get PVC size: {e}")
+        return None
+
+
+def get_vm_volume_names(vm_name: str, namespace: str,
+                        logger: Optional[logging.Logger] = None) -> List[str]:
+    """
+    Get list of PVC names used by a VM.
+
+    Args:
+        vm_name: VM name
+        namespace: Namespace name
+        logger: Logger instance
+
+    Returns:
+        List of PVC names
+    """
+    try:
+        returncode, stdout, stderr = run_kubectl_command(
+            ['get', 'vm', vm_name, '-n', namespace, '-o', 'json'],
+            check=False,
+            logger=logger
+        )
+
+        if returncode != 0:
+            return []
+
+        vm_data = json.loads(stdout)
+        volumes = vm_data.get('spec', {}).get('template', {}).get('spec', {}).get('volumes', [])
+
+        pvc_names = []
+        for volume in volumes:
+            # Check for dataVolume
+            if 'dataVolume' in volume:
+                pvc_names.append(volume['dataVolume']['name'])
+            # Check for persistentVolumeClaim
+            elif 'persistentVolumeClaim' in volume:
+                pvc_names.append(volume['persistentVolumeClaim']['claimName'])
+
+        return pvc_names
+
+    except Exception as e:
+        if logger:
+            logger.error(f"[{namespace}] Failed to get VM volumes: {e}")
+        return []
 

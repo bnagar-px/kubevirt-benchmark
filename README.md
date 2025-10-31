@@ -11,9 +11,12 @@ This suite provides automated performance testing tools to measure and validate 
 - **VM Creation Performance Testing**: Measure VM provisioning and boot times at scale
 - **Boot Storm Testing**: Test VM startup performance when powering on multiple VMs simultaneously
 - **Live Migration Testing**: Measure VM live migration performance across different scenarios
+- **Capacity Benchmark Testing**: Test cluster capacity limits with comprehensive VM operations (create, resize, restart, snapshot, migrate)
 - **Single Node Testing**: Pin all VMs to a single node for node-level capacity testing
 - **Network Readiness Validation**: Test VM network connectivity and measure time-to-ready
 - **Failure and Recovery Testing**: Validate VM recovery times after node failures
+- **VM Snapshot Testing**: Test VM snapshot creation and readiness
+- **Volume Resize Testing**: Test PVC expansion capabilities
 - **Parallel Execution**: Support for testing hundreds of VMs concurrently
 - **Parallel Namespace Creation**: Create namespaces in batches for faster test setup
 - **Multiple Storage Backends**: Support for both standard Portworx and Pure FlashArray Direct Access (FADA)
@@ -59,6 +62,10 @@ kubevirt-benchmark-suite/
 │
 ├── migration/                         # Live migration performance tests
 │   └── measure-vm-migration-time.py  # Main migration test script
+│
+├── capacity-benchmark/                # Capacity benchmark tests
+│   ├── measure-capacity.py           # Main capacity test script
+│   └── README.md                     # Capacity benchmark documentation
 │
 ├── failure-recovery/                  # Failure and recovery tests
 │   ├── measure-recovery-time.py      # Recovery measurement script
@@ -302,7 +309,65 @@ python3 measure-vm-migration-time.py --start 1 --end 100 --create-vms --cleanup
 
 ---
 
-### Scenario 5: Failure and Recovery Testing
+### Scenario 5: Capacity Benchmark Testing
+
+Tests cluster capacity limits by running comprehensive VM operations in a loop until failure.
+
+**Use Case**: Discover maximum VM capacity, test volume expansion limits, validate snapshot functionality, and stress-test the cluster.
+
+**Example - Basic Capacity Test**:
+```bash
+cd capacity-benchmark
+
+# Run capacity test with default settings (5 VMs per iteration)
+python3 measure-capacity.py --storage-class portworx-fada-sc
+
+# Run with custom VM count
+python3 measure-capacity.py --storage-class portworx-fada-sc --vms 10
+
+# Run with maximum iterations limit
+python3 measure-capacity.py --storage-class portworx-fada-sc --max-iterations 5
+```
+
+**Example - Skip Specific Phases**:
+```bash
+# Test only VM creation capacity (skip resize, restart, snapshot, migration)
+python3 measure-capacity.py \
+  --storage-class portworx-fada-sc \
+  --vms 10 \
+  --skip-resize-job \
+  --skip-restart-job \
+  --skip-snapshot-job \
+  --skip-migration-job
+
+# Test volume expansion limits
+python3 measure-capacity.py \
+  --storage-class portworx-fada-sc \
+  --vms 5 \
+  --min-vol-size 30Gi \
+  --min-vol-inc-size 20Gi \
+  --max-iterations 10
+```
+
+**What it does**:
+1. **Phase 1**: Creates VMs with multiple data volumes
+2. **Phase 2**: Resizes root and data volumes (tests volume expansion)
+3. **Phase 3**: Restarts VMs (tests VM lifecycle)
+4. **Phase 4**: Creates VM snapshots (tests snapshot functionality)
+5. **Phase 5**: Migrates VMs (tests live migration)
+6. Repeats until failure or max iterations reached
+
+**Cleanup**:
+```bash
+# Cleanup resources after test
+python3 measure-capacity.py --cleanup-only
+```
+
+**See detailed documentation**: `capacity-benchmark/README.md`
+
+---
+
+### Scenario 6: Failure and Recovery Testing
 
 Tests VM recovery time after simulated node failures using Fence Agents Remediation (FAR).
 
