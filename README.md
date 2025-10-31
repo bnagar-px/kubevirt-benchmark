@@ -6,9 +6,27 @@ A comprehensive performance testing toolkit for KubeVirt virtual machines runnin
 
 This suite provides automated performance testing tools to measure and validate KubeVirt VM provisioning, boot times, network readiness, and failure recovery scenarios. It's designed for production environments running OpenShift Virtualization with Portworx as the storage backend.
 
+## New: virtbench CLI
+
+The suite now includes **virtbench**, a unified command-line interface that provides a professional, kubectl-like experience for all benchmarks.
+
+```bash
+# Install the CLI
+./install.sh
+
+# Run benchmarks with a single command
+virtbench capacity-benchmark --storage-class fada-raw-sc --vms 5
+virtbench datasource-clone --storage-class fada-raw-sc --vms 50
+virtbench migration --storage-class fada-raw-sc --namespaces 10
+```
+
+See [CLI_README.md](CLI_README.md) for complete CLI documentation.
+
 ## Features
 
+- **Unified CLI Interface**: Professional kubectl-like CLI with shell completion
 - **VM Creation Performance Testing**: Measure VM provisioning and boot times at scale
+- **Capacity Benchmark Testing**: Test cluster limits with 5-phase testing (create, resize, restart, snapshot, migrate)
 - **Boot Storm Testing**: Test VM startup performance when powering on multiple VMs simultaneously
 - **Live Migration Testing**: Measure VM live migration performance across different scenarios
 - **Capacity Benchmark Testing**: Test cluster capacity limits with comprehensive VM operations (create, resize, restart, snapshot, migrate)
@@ -29,6 +47,7 @@ This suite provides automated performance testing tools to measure and validate 
 - OpenShift Container Platform 4.x with OpenShift Virtualization
 - Portworx Enterprise 2.x or later
 - Python 3.6 or later
+- Go 1.21 or later (for building virtbench CLI)
 - kubectl CLI configured with cluster access
 - Bash shell (for helper scripts)
 
@@ -50,12 +69,32 @@ The user running these tests needs:
 ```
 kubevirt-benchmark-suite/
 ├── README.md                          # This file
+├── CLI_README.md                      # virtbench CLI documentation
 ├── QUICKSTART.md                      # 5-minute quick start guide
 ├── SETUP.md                           # Detailed setup instructions
 ├── CLEANUP_GUIDE.md                   # Comprehensive cleanup guide
 ├── CONTRIBUTING.md                    # Contribution guidelines
 ├── LICENSE                            # Apache 2.0 License
 ├── requirements.txt                   # Python dependencies
+├── go.mod                             # Go module file
+├── go.sum                             # Go dependencies
+├── Makefile                           # Build automation
+├── install.sh                         # Installation script
+│
+├── cmd/virtbench/                     # virtbench CLI source code
+│   ├── main.go                       # CLI entry point
+│   ├── root.go                       # Root command
+│   ├── common.go                     # Common utilities
+│   ├── datasource_clone.go           # DataSource clone subcommand
+│   ├── migration.go                  # Migration subcommand
+│   ├── capacity_benchmark.go         # Capacity benchmark subcommand
+│   ├── failure_recovery.go           # Failure recovery subcommand
+│   ├── validate_cluster.go           # Cluster validation subcommand
+│   ├── version.go                    # Version subcommand
+│   └── completion.go                 # Shell completion subcommand
+│
+├── bin/                               # Built binaries (generated)
+│   └── virtbench                     # virtbench CLI binary
 │
 ├── datasource-clone/                  # DataSource-based VM provisioning tests
 │   └── measure-vm-creation-time.py   # Main test script
@@ -95,52 +134,52 @@ kubevirt-benchmark-suite/
 
 ## Quick Start
 
-### 1. Clone the Repository
+### Option 1: Using virtbench CLI (Recommended)
 
 ```bash
+# 1. Clone the repository
 git clone https://github.com/your-org/kubevirt-benchmark-suite.git
 cd kubevirt-benchmark-suite
+
+# 2. Install virtbench CLI
+./install.sh
+
+# 3. Validate your cluster
+virtbench validate-cluster --storage-class fada-raw-sc
+
+# 4. Run a benchmark
+virtbench capacity-benchmark --storage-class fada-raw-sc --vms 5 --max-iterations 3
 ```
 
-### 2. Install Dependencies
+See [CLI_README.md](CLI_README.md) for complete CLI documentation.
+
+### Option 2: Using Python Scripts Directly
 
 ```bash
+# 1. Clone the repository
+git clone https://github.com/your-org/kubevirt-benchmark-suite.git
+cd kubevirt-benchmark-suite
+
+# 2. Install Python dependencies
 pip3 install -r requirements.txt
-```
 
-### 3. Validate Your Cluster
-
-Validate that your cluster is ready for benchmarks:
-
-```bash
+# 3. Validate your cluster
 python3 utils/validate_cluster.py --storage-class portworx-fada-sc
-```
 
-See [VALIDATION_GUIDE.md](VALIDATION_GUIDE.md) for detailed validation options.
-
-### 4. Configure VM Templates
-
-Apply template variables to create customized VM configurations:
-
-```bash
+# 4. Configure VM templates
 ./utils/apply_template.sh \
   --output /tmp/my-vm.yaml \
   --vm-name my-test-vm \
   --storage-class portworx-fada-sc \
   --memory 4Gi \
   --cpu-cores 2
-```
 
-See [TEMPLATE_GUIDE.md](TEMPLATE_GUIDE.md) for detailed template usage.
-
-### 5. Run a Basic Test
-
-Test VM creation with 10 VMs:
-
-```bash
+# 5. Run a basic test
 cd datasource-clone
 python3 measure-vm-creation-time.py --start 1 --end 10 --vm-name rhel-9-vm
 ```
+
+See [TEMPLATE_GUIDE.md](TEMPLATE_GUIDE.md) for detailed template usage.
 
 ## Testing Scenarios
 
