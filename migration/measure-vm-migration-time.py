@@ -51,7 +51,7 @@ from utils.common import (
 # Default configuration
 DEFAULT_VM_NAME = 'rhel-9-vm'
 DEFAULT_NAMESPACE_PREFIX = 'kubevirt-perf-test'
-DEFAULT_VM_YAML = '../examples/vm-templates/vm-template.yaml'
+DEFAULT_VM_YAML = '../examples/vm-templates/rhel9-vm-datasource.yaml'
 
 
 def parse_arguments():

@@ -144,10 +144,14 @@ cd kubevirt-benchmark-suite
 # 2. Install virtbench CLI
 ./install.sh
 
-# 3. Validate your cluster
+# 3. Create SSH pod for ping tests (required for network validation)
+kubectl apply -f examples/ssh-pod.yaml
+kubectl wait --for=condition=Ready pod/ssh-test-pod -n default --timeout=300s
+
+# 4. Validate your cluster
 virtbench validate-cluster --storage-class fada-raw-sc
 
-# 4. Run a benchmark
+# 5. Run a benchmark
 virtbench capacity-benchmark --storage-class fada-raw-sc --vms 5 --max-iterations 3
 ```
 
@@ -162,6 +166,10 @@ cd kubevirt-benchmark-suite
 
 # 2. Install Python dependencies
 pip3 install -r requirements.txt
+
+# 3. Create SSH pod for ping tests (required for network validation)
+kubectl apply -f examples/ssh-pod.yaml
+kubectl wait --for=condition=Ready pod/ssh-test-pod -n default --timeout=300s
 
 # 3. Validate your cluster
 python3 utils/validate_cluster.py --storage-class portworx-fada-sc
@@ -207,7 +215,29 @@ Tests VM startup performance on a single node when powering on multiple VMs simu
 
 **Use Case**: Validates node-level capacity and boot storm performance (e.g., how many VMs can a single node handle during boot storm).
 
-**Example**:
+**Example (virtbench CLI)**:
+```bash
+# Run test on a single node (auto-selected)
+virtbench datasource-clone \
+  --start 1 \
+  --end 50 \
+  --vm-name rhel-9-vm \
+  --single-node \
+  --boot-storm \
+  --log-file single-node-boot-storm-$(date +%Y%m%d-%H%M%S).log
+
+# Or specify a specific node
+virtbench datasource-clone \
+  --start 1 \
+  --end 50 \
+  --vm-name rhel-9-vm \
+  --single-node \
+  --node-name worker-node-1 \
+  --boot-storm \
+  --log-file single-node-boot-storm-$(date +%Y%m%d-%H%M%S).log
+```
+
+**Example (Python script)**:
 ```bash
 cd datasource-clone
 
@@ -245,7 +275,18 @@ Tests VM startup performance across all nodes when powering on multiple VMs simu
 
 **Use Case**: Validates cluster-wide performance under boot storm conditions (e.g., after maintenance, power outage recovery).
 
-**Example**:
+**Example (virtbench CLI)**:
+```bash
+# Run test with boot storm (VMs distributed across all nodes)
+virtbench datasource-clone \
+  --start 1 \
+  --end 100 \
+  --vm-name rhel-9-vm \
+  --boot-storm \
+  --log-file boot-storm-$(date +%Y%m%d-%H%M%S).log
+```
+
+**Example (Python script)**:
 ```bash
 cd datasource-clone
 

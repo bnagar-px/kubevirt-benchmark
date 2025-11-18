@@ -26,6 +26,9 @@ running on OpenShift Container Platform (OCP).
 It provides multiple benchmark workloads to test VM creation, migration, capacity,
 failure recovery, and more.`,
 	Version: "1.0.0",
+	CompletionOptions: cobra.CompletionOptions{
+		DisableDefaultCmd: true,
+	},
 }
 
 func init() {

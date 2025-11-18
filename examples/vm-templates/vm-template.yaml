@@ -54,12 +54,7 @@ spec:
             - disk:
                 bus: virtio
               name: cloudinitdisk
-            # - name: data-disk-1
-            #   disk:
-            #     bus: virtio
-            # - name: data-disk-2
-            #   disk:
-            #     bus: virtio
+
   
             
 
@@ -88,14 +83,6 @@ spec:
         - dataVolume:
             name: {{VM_NAME}}-volume
           name: rootdisk
-        # - name: data-disk-1
-        #   persistentVolumeClaim:
-        #     claimName: data-disk-1
-        # - name: data-disk-2
-        #   persistentVolumeClaim:
-        #     claimName: data-disk-2
-  
-        
         - cloudInitNoCloud:
             userData: |
               #cloud-config
@@ -104,36 +91,3 @@ spec:
               password: Password1
               user: rhel
           name: cloudinitdisk
-# ---
-# apiVersion: v1
-# kind: PersistentVolumeClaim
-# metadata:
-#   name: data-disk-1
-#   labels:
-#     portworx.io/kubevirt: "true"
-# spec:
-#   storageClassName: {{STORAGE_CLASS_NAME}}
-#   volumeMode: Block
-#   accessModes:
-#     - ReadWriteMany
-#   resources:
-#     requests:
-#       storage: 20Gi
-# ---
-# apiVersion: v1
-# kind: PersistentVolumeClaim
-# metadata:
-#   name: data-disk-2
-#   labels:
-#     portworx.io/kubevirt: "true"
-# spec:
-#   storageClassName: {{STORAGE_CLASS_NAME}}
-#   volumeMode: Block
-#   accessModes:
-#     - ReadWriteMany
-#   resources:
-#     requests:
-#       storage: 30Gi
-
-
-      

@@ -39,7 +39,7 @@ from utils.common import (
 
 # Default configuration
 DEFAULT_NAMESPACE = 'virt-capacity-benchmark'
-DEFAULT_VM_YAML = '../examples/vm-templates/vm-template.yaml'
+DEFAULT_VM_YAML = '../examples/vm-templates/rhel9-vm-datasource.yaml'
 DEFAULT_VM_NAME = 'capacity-vm'
 DEFAULT_VMS_PER_ITERATION = 5
 DEFAULT_DATA_VOLUME_COUNT = 9

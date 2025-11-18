@@ -11,7 +11,28 @@ import (
 
 // getRepoRoot returns the root directory of the repository
 func getRepoRoot() (string, error) {
-	// Get the directory where the virtbench binary is located
+	// First, check if VIRTBENCH_REPO environment variable is set
+	if repoPath := os.Getenv("VIRTBENCH_REPO"); repoPath != "" {
+		if _, err := os.Stat(repoPath); err == nil {
+			return filepath.Abs(repoPath)
+		}
+	}
+
+	// Second, check current working directory
+	cwd, err := os.Getwd()
+	if err == nil {
+		// Check if we're in the repo (look for capacity-benchmark directory)
+		if _, err := os.Stat(filepath.Join(cwd, "capacity-benchmark")); err == nil {
+			return filepath.Abs(cwd)
+		}
+		// Check if we're in a subdirectory of the repo
+		parent := filepath.Dir(cwd)
+		if _, err := os.Stat(filepath.Join(parent, "capacity-benchmark")); err == nil {
+			return filepath.Abs(parent)
+		}
+	}
+
+	// Third, get the directory where the virtbench binary is located
 	execPath, err := os.Executable()
 	if err != nil {
 		return "", fmt.Errorf("failed to get executable path: %w", err)
@@ -33,8 +54,11 @@ func getRepoRoot() (string, error) {
 		return filepath.Abs(filepath.Join(binDir, ".."))
 	}
 
-	// Otherwise assume we're already at repo root or in a subdirectory
-	return filepath.Abs(binDir)
+	// If we can't find the repo, return an error with helpful message
+	return "", fmt.Errorf("cannot find repository root. Please either:\n" +
+		"  1. Run virtbench from the repository directory, or\n" +
+		"  2. Set VIRTBENCH_REPO environment variable to the repository path, or\n" +
+		"  3. Use the binary from bin/ directory instead of installing to /usr/local/bin")
 }
 
 // runPythonScript executes a Python script with the given arguments
@@ -88,6 +112,10 @@ func buildPythonArgs(flagMap map[string]interface{}) []string {
 		switch v := value.(type) {
 		case string:
 			if v != "" {
+				// Convert log-level to uppercase for Python scripts
+				if flag == "log-level" {
+					v = strings.ToUpper(v)
+				}
 				args = append(args, fmt.Sprintf("--%s", flag), v)
 			}
 		case int:

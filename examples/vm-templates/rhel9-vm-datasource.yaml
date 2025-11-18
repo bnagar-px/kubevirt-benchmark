@@ -18,7 +18,7 @@ spec:
             requests:
               storage: 30Gi
           # Update with your StorageClass name
-          storageClassName: portworx-fada-sc
+          storageClassName: fada-raw-sc
           volumeMode: Block
   runStrategy: Always
   template:
