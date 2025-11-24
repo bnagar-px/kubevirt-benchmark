@@ -40,6 +40,7 @@ See [CLI_README.md](CLI_README.md) for complete CLI documentation.
 - **Multiple Storage Backends**: Support for both standard Portworx and Pure FlashArray Direct Access (FADA)
 - **Comprehensive Logging**: Detailed logs with timestamps and error tracking
 - **Flexible Configuration**: Command-line arguments for easy customization
+- **Interactive Results Dashboard**: Auto-generate rich HTML dashboards for all test results
 
 ## Prerequisites
 
@@ -96,7 +97,10 @@ kubevirt-benchmark-suite/
 ├── bin/                               # Built binaries (generated)
 │   └── virtbench                     # virtbench CLI binary
 │
-├── datasource-clone/                  # DataSource-based VM provisioning tests
+├── dashboard/                        # Interactive dashboard for test results
+│   └── generate_dashboard.py         # Dashboard generation script
+│   
+├── datasource-clone/                 # DataSource-based VM provisioning tests
 │   └── measure-vm-creation-time.py   # Main test script
 │
 ├── migration/                         # Live migration performance tests
@@ -206,6 +210,7 @@ python3 measure-vm-creation-time.py \
   --start 1 \
   --end 100 \
   --vm-name rhel-9-vm \
+  --save-results \
   --log-file results-$(date +%Y%m%d-%H%M%S).log
 ```
 
@@ -248,6 +253,7 @@ python3 measure-vm-creation-time.py \
   --vm-name rhel-9-vm \
   --single-node \
   --boot-storm \
+  --save-results \
   --log-file single-node-boot-storm-$(date +%Y%m%d-%H%M%S).log
 
 # Or specify a specific node
@@ -258,7 +264,18 @@ python3 measure-vm-creation-time.py \
   --single-node \
   --node-name worker-node-1 \
   --boot-storm \
+  --save-results \
   --log-file single-node-boot-storm-$(date +%Y%m%d-%H%M%S).log
+
+# Save results in JSON and CSV format to a directory
+python3 measure-vm-creation-time.py \
+  --start 1 \
+  --end 50 \
+  --vm-name rhel-9-vm \
+  --single-node \
+  --node-name worker-node-1 \
+  --boot-storm \
+  --save-results
 ```
 
 **What it does**:
@@ -296,6 +313,7 @@ python3 measure-vm-creation-time.py \
   --end 100 \
   --vm-name rhel-9-vm \
   --boot-storm \
+  --save-results \
   --log-file boot-storm-$(date +%Y%m%d-%H%M%S).log
 ```
 
@@ -321,7 +339,8 @@ python3 measure-vm-migration-time.py \
   --start 1 \
   --end 10 \
   --source-node worker-1 \
-  --target-node worker-2
+  --target-node worker-2 \
+  --save-results
 ```
 
 **Example - Parallel Migration**:
@@ -333,7 +352,23 @@ python3 measure-vm-migration-time.py \
   --source-node worker-1 \
   --target-node worker-2 \
   --parallel \
-  --concurrency 10
+  --concurrency 10 \
+  --save-results
+```
+
+**Example - Parallel Migration with Advanced Options**:
+```bash
+# High-scale parallel migration with interleaved scheduling and custom timeout
+python3 measure-vm-migration-time.py \
+  --start 1 \
+  --end 200 \
+  --parallel \
+  --concurrency 50 \
+  --skip-ping \
+  --save-results \
+  --migration-timeout 1000 \
+  --px-version 3.5.0-run2-optimized \
+  --interleaved-scheduling
 ```
 
 **Example - Node Evacuation (Specific Node)**:
@@ -344,7 +379,8 @@ python3 measure-vm-migration-time.py \
   --end 100 \
   --source-node worker-3 \
   --evacuate \
-  --concurrency 20
+  --concurrency 20 \
+  --save-results
 ```
 
 **Example - Node Evacuation (Auto-Select Busiest)**:
@@ -355,7 +391,8 @@ python3 measure-vm-migration-time.py \
   --end 100 \
   --evacuate \
   --auto-select-busiest \
-  --concurrency 20
+  --concurrency 20 \
+  --save-results
 ```
 
 **Example - Round-Robin Migration**:
@@ -365,7 +402,8 @@ python3 measure-vm-migration-time.py \
   --start 1 \
   --end 100 \
   --round-robin \
-  --concurrency 20
+  --concurrency 20 \
+  --save-results
 ```
 
 **What it does**:
@@ -472,27 +510,68 @@ vim far-template.yaml
 
 ### VM Creation Tests
 
+| Option                   | Description                                                                            | Default            |
+|--------------------------|----------------------------------------------------------------------------------------|--------------------|
+| `--start`                | Starting namespace index                                                               | 1                  |
+| `--end`                  | Ending namespace index                                                                 | 100                |
+| `--vm-name`              | VM resource name                                                                       | rhel-9-vm          |
+| `--concurrency`          | Max parallel monitoring threads                                                        | 50                 |
+| `--ssh-pod`              | Pod name for ping tests                                                                | ssh-test-pod       |
+| `--ssh-pod-ns`           | Namespace of SSH pod                                                                   | default            |
+| `--poll-interval`        | Seconds between status checks                                                          | 1                  |
+| `--ping-timeout`         | Ping timeout in seconds                                                                | 600                |
+| `--log-file`             | Output log file path                                                                   | stdout             |
+| `--log-level`            | Logging level (DEBUG/INFO/WARNING/ERROR)                                               | INFO               |
+| `--namespace-prefix`     | Prefix for test namespaces                                                             | kubevirt-perf-test |
+| `--namespace-batch-size` | Namespaces to create in parallel                                                       | 20                 |
+| `--boot-storm`           | Enable boot storm testing                                                              | false              |
+| `--single-node`          | Run all VMs on a single node                                                           | false              |
+| `--node-name`            | Specific node to use (requires --single-node)                                          | auto-select        |
+| `--cleanup`              | Delete resources and namespaces after test                                             | false              |
+| `--cleanup-on-failure`   | Clean up even if tests fail                                                            | false              |
+| `--dry-run-cleanup`      | Show what would be deleted without deleting                                            | false              |
+| `--yes`                  | Skip confirmation prompt for cleanup                                                   | false              |
+| `--save_results`         | Save detailed results (JSON and CSV) inside a timestamped folder under results/ folder | false              |
+| `--results_folder`       | Base directory to store test results                                                   | ../results         |
+| `--px_version`           | Portworx version to include in results path (auto-detect if not provided)              | auto-detect        |
+| `--px_namespace`         | Default namespace where Portworx is installed                                          | Portworx           |
+
+### Live Migration Tests
+
 | Option | Description | Default |
 |--------|-------------|---------|
 | `--start` | Starting namespace index | 1 |
-| `--end` | Ending namespace index | 100 |
+| `--end` | Ending namespace index | 10 |
 | `--vm-name` | VM resource name | rhel-9-vm |
-| `--concurrency` | Max parallel monitoring threads | 50 |
-| `--ssh-pod` | Pod name for ping tests | ssh-test-pod |
-| `--ssh-pod-ns` | Namespace of SSH pod | default |
-| `--poll-interval` | Seconds between status checks | 1 |
-| `--ping-timeout` | Ping timeout in seconds | 600 |
+| `--namespace-prefix` | Prefix for test namespaces | kubevirt-perf-test |
+| `--create-vms` | Create VMs before migration | false |
+| `--vm-template` | VM template YAML file | ../examples/vm-templates/vm-template.yaml |
+| `--single-node` | Create all VMs on a single node (requires --create-vms) | false |
+| `--node-name` | Specific node to create VMs on (requires --single-node) | auto-select |
+| `--source-node` | Source node name for migration | None |
+| `--target-node` | Target node name for migration | auto-select |
+| `--parallel` | Migrate VMs in parallel | false |
+| `--evacuate` | Evacuate all VMs from source node | false |
+| `--auto-select-busiest` | Auto-select the node with most VMs (requires --evacuate) | false |
+| `--round-robin` | Migrate VMs in round-robin fashion across all nodes | false |
+| `--concurrency` | Number of concurrent migrations | 10 |
+| `--migration-timeout` | Timeout for each migration in seconds | 600 |
+| `--ssh-pod` | SSH test pod name for ping tests | ssh-pod-name |
+| `--ssh-pod-ns` | SSH test pod namespace | default |
+| `--ping-timeout` | Timeout for ping test in seconds | 600 |
+| `--skip-ping` | Skip ping validation after migration | false |
+| `--interleaved-scheduling` | Distribute parallel migration threads in interleaved pattern across nodes | false |
 | `--log-file` | Output log file path | stdout |
 | `--log-level` | Logging level (DEBUG/INFO/WARNING/ERROR) | INFO |
-| `--namespace-prefix` | Prefix for test namespaces | kubevirt-perf-test |
-| `--namespace-batch-size` | Namespaces to create in parallel | 20 |
-| `--boot-storm` | Enable boot storm testing | false |
-| `--single-node` | Run all VMs on a single node | false |
-| `--node-name` | Specific node to use (requires --single-node) | auto-select |
-| `--cleanup` | Delete resources and namespaces after test | false |
-| `--cleanup-on-failure` | Clean up even if tests fail | false |
+| `--cleanup` | Delete VMs, VMIMs, and namespaces after test | false |
+| `--cleanup-on-failure` | Clean up resources even if tests fail | false |
 | `--dry-run-cleanup` | Show what would be deleted without deleting | false |
 | `--yes` | Skip confirmation prompt for cleanup | false |
+| `--skip-checks` | Skip VM verifications before migration | false |
+| `--save-results` | Save detailed migration results (JSON and CSV) under results/ | false |
+| `--px-version` | Portworx version to include in results path (auto-detect if not provided) | auto-detect |
+| `--px-namespace` | Namespace where Portworx is installed | portworx |
+| `--results-folder` | Base directory to store test results | ../results |
 
 ### Recovery Tests
 
@@ -587,6 +666,41 @@ Enable debug logging for detailed troubleshooting:
 python3 measure-vm-creation-time.py --log-level DEBUG --start 1 --end 5
 ```
 
+
+## Results Dashboard
+
+### Generate Interactive Dashboard
+
+After running tests with `--save-results`, generate an interactive HTML dashboard to visualize all your performance test results:
+
+```bash
+# Basic usage (last 15 days)
+python3 dashboard/generate_dashboard.py
+
+# Custom time range and configuration
+python3 dashboard/generate_dashboard.py \
+  --days 50 \
+  --base-dir results \
+  --cluster-info dashboard/cluster_info.yaml \
+  --manual-results dashboard/manual_results.yaml \
+  --output-html results_dashboard.html
+```
+
+**Dashboard Features:**
+- **Multi-level Organization**: Results organized by PX Version → Disk Count → VM Size
+- **Interactive Charts**: Plotly-based bar charts showing duration metrics
+- **Detailed Tables**: Sortable and searchable DataTables for all test results
+- **Cluster Information**: Display cluster metadata and configuration
+- **Manual Results**: Include manually collected test results
+
+**What you get:**
+- VM Creation performance charts and tables
+- Boot Storm performance metrics
+- Live Migration duration analysis
+- Summary statistics across all test runs
+- Time-series visualization of performance trends
+
+> **📖 For detailed dashboard documentation, see [dashboard/README.md](dashboard/README.md)**
 
 ## Utility Tools
 
@@ -754,7 +868,7 @@ CLEANUP SUMMARY
 3. **Start Small**: Begin with 5-10 VMs to validate your setup before scaling
 4. **Monitor Resources**: Watch cluster resource utilization during tests
 5. **Use Dedicated Namespaces**: Tests create namespaces with predictable names for easy cleanup
-6. **Save Results**: Always use `--log-file` to preserve test results
+6. **Save Results**: Use `--save-results` to preserve test results data for dashboard generation
 7. **Cleanup**: Remove test resources after completion to free cluster resources
 8. **Network Testing**: Deploy an SSH pod in advance for ping tests
 

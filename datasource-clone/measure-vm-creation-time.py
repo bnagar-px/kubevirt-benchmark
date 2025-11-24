@@ -13,14 +13,14 @@ License: Apache 2.0
 """
 
 import argparse
+import yaml
 import os
 import sys
-import time
 import signal
 from datetime import datetime, timedelta
+import subprocess, json, time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Tuple, List, Optional
-import subprocess, json
 
 # Add parent directory to path for imports
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
@@ -30,7 +30,7 @@ from utils.common import (
     delete_namespace, get_vm_status, get_vmi_ip, ping_vm, print_summary_table,
     validate_prerequisites, stop_vm, start_vm, wait_for_vm_stopped,
     get_worker_nodes, select_random_node, add_node_selector_to_vm_yaml,
-    cleanup_test_namespaces, confirm_cleanup, print_cleanup_summary
+    cleanup_test_namespaces, confirm_cleanup, print_cleanup_summary, save_results, get_px_version_from_cluster
 )
 
 # Default configuration
@@ -199,6 +199,37 @@ Examples:
         default=None,
         help='Specific node name to use (if not provided, a random worker node will be selected)'
     )
+
+    # Save results
+    parser.add_argument(
+        '--save-results',
+        action='store_true',
+        help='Save detailed results (JSON and CSV) inside a timestamped folder under results/.'
+    )
+
+    # Base folder for results
+    parser.add_argument(
+        '--results-folder',
+        type=str,
+        default=os.path.join(os.path.dirname(os.getcwd()), 'results'),
+        help='Base directory to store test results (default: ../results)'
+    )
+
+    # Portworx version grouping
+    parser.add_argument(
+        '--px-version',
+        type=str,
+        default=None,
+        help='Portworx version to include in results path (auto-detect if not provided)'
+    )
+
+    parser.add_argument(
+        '--px-namespace',
+        type=str,
+        default="portworx",
+        help='Default namespace where Portworx is installed'
+    )
+
     
     args = parser.parse_args()
     
@@ -399,7 +430,7 @@ def wait_for_ping(ns: str, ip: str, start_ts: datetime, ssh_pod: str, ssh_pod_ns
 
 
 def monitor_vm(ns: str, vm_name: str, start_ts: datetime, ssh_pod: str, ssh_pod_ns: str,
-               poll_interval: int, ping_timeout: int, logger) -> Tuple[str, float, float, float, bool]:
+               poll_interval: int, ping_timeout: int, logger, skip_dv_clone_tracking=False) -> Tuple[str, float, float, float, bool]:
     """
     Monitor a single VM through its lifecycle and record clone timing.
 
@@ -412,21 +443,23 @@ def monitor_vm(ns: str, vm_name: str, start_ts: datetime, ssh_pod: str, ssh_pod_
         poll_interval: Polling interval
         ping_timeout: Ping timeout
         logger: Logger instance
-
+        skip_dv_clone_tracking: Flag to control DataVolume Clone
     Returns:
         Tuple of (namespace, running_time, ping_time, clone_duration, success)
     """
     try:
-        # Step 1: Track clone timing first
-        clone_start, clone_end, clone_duration = track_clone_progress(ns, vm_name, start_ts, poll_interval, logger)
-
-        # Step 2: Wait for VM to become Running
+        # Track clone timing
+        if not skip_dv_clone_tracking:
+            clone_start, clone_end, clone_duration = track_clone_progress(ns, vm_name, start_ts, poll_interval, logger)
+        else:
+            clone_duration = None
+        # Wait for VM to become Running
         _, running_time = wait_for_vm_running(ns, vm_name, start_ts, poll_interval, logger)
 
-        # Step 3: Wait for VMI IP
+        # Wait for VMI IP
         ip = wait_for_vmi_ip(ns, vm_name, poll_interval, logger)
 
-        # Step 4: Wait until ping works
+        # Wait until ping works
         _, ping_time, success = wait_for_ping(
             ns, ip, start_ts, ssh_pod, ssh_pod_ns, poll_interval, ping_timeout, logger
         )
@@ -437,8 +470,7 @@ def monitor_vm(ns: str, vm_name: str, start_ts: datetime, ssh_pod: str, ssh_pod_
         logger.error(f"[{ns}] Error monitoring VM: {e}")
         return ns, None, None, None, False
 
-from datetime import datetime, timedelta
-import subprocess, json, time
+
 
 def track_clone_progress(ns: str, vm_name: str, start_ts: datetime, poll_interval: int, logger, timeout: int = 1800):
     """
@@ -569,6 +601,43 @@ def main():
     logger.info(f"Poll interval: {args.poll_interval}s")
     logger.info(f"Ping timeout: {args.ping_timeout}s")
     logger.info("=" * 80)
+    num_disks_per_vm = 1
+
+    if not args.px_version:
+        args.px_version = get_px_version_from_cluster(logger, namespace=args.px_namespace)
+    else:
+        logger.info(f"Using provided PX version: {args.px_version}")
+
+    try:
+        with open(args.vm_template, 'r') as f:
+            # Load *all* YAML docs
+            docs = list(yaml.safe_load_all(f))
+
+        # Find the VirtualMachine document
+        vm_spec = next((doc for doc in docs if doc and doc.get('kind') == 'VirtualMachine'), None)
+
+        if not vm_spec:
+            raise ValueError("No VirtualMachine document found in the YAML file")
+
+        # Get list of volumes under spec.template.spec.volumes
+        volumes = (
+            vm_spec.get('spec', {})
+            .get('template', {})
+            .get('spec', {})
+            .get('volumes', [])
+        )
+
+        # Exclude cloudInit volumes
+        non_cloudinit_volumes = [
+            v for v in volumes
+            if not any(k in v for k in ['cloudInitNoCloud', 'cloudInitConfigDrive'])
+        ]
+
+        num_disks_per_vm = len(non_cloudinit_volumes)
+        logger.info(f"Detected {num_disks_per_vm} disks (excluding cloud-init) in VM template")
+
+    except Exception as e:
+        logger.error(f"Failed to parse {args.vm_template}: {e}")
 
     # Validate prerequisites
     if not validate_prerequisites(args.ssh_pod, args.ssh_pod_ns, logger):
@@ -669,7 +738,31 @@ def main():
     logger.info(f"Total test duration: {total_elapsed:.2f}s")
     
     # Print summary
-    print_summary_table(results, "VM Creation Performance Test Results")
+    print_summary_table(results, "VM Creation Performance Test Results", logger=logger)
+
+    # Save structured results if requested
+    if args.save_results:
+        timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+        suffix = f"{args.namespace_prefix}_{args.start}-{args.end}"
+
+        # Construct versioned results path dynamically
+        out_dir = os.path.join(args.results_folder, args.px_version, f"{num_disks_per_vm}-disk", f"{timestamp}_{suffix}")
+        os.makedirs(out_dir, exist_ok=True)
+
+        logger.info(f"Created results directory: {out_dir}")
+
+        # Save initial creation test results
+        save_results(
+            args,
+            results,
+            base_dir=out_dir,
+            prefix="vm_creation_results",
+            logger=logger,
+            total_time=total_elapsed
+        )
+        logger.info(f"Detailed and summary results saved under: {out_dir}")
+    else:
+        logger.info("VM Creation Performance Test Results not saved (use --save-results to enable).")
 
     # Boot storm testing if requested
     boot_storm_results = []
@@ -752,7 +845,7 @@ def main():
             boot_futures = {
                 executor.submit(
                     monitor_vm, ns, args.vm_name, ts, args.ssh_pod, args.ssh_pod_ns,
-                    args.poll_interval, args.ping_timeout, logger
+                    args.poll_interval, args.ping_timeout, logger, skip_dv_clone_tracking=True
                 ): ns
                 for ns, ts in boot_start_times.items()
             }
@@ -773,9 +866,11 @@ def main():
         logger.info(f"Total boot storm duration: {boot_total_elapsed:.2f}s")
 
         # Print boot storm summary
-        print_summary_table(boot_storm_results, "Boot Storm Performance Test Results")
+        print_summary_table(boot_storm_results, "Boot Storm Performance Test Results", skip_clone=True, logger=logger)
+        if args.save_results:
+            save_results(args, boot_storm_results, base_dir=out_dir, prefix="boot_storm_results", logger=logger,
+                         skip_clone=True, total_time=boot_total_elapsed)
 
-    # Determine if cleanup should run
     failed_count = sum(1 for r in results if not r[4])
     should_cleanup = args.cleanup or (args.cleanup_on_failure and failed_count > 0)
 

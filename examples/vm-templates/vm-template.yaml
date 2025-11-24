@@ -38,10 +38,6 @@ spec:
   runStrategy: Always
   template:
     spec:
-     
-
-
-  
       domain:
         cpu:
           cores: {{VM_CPU_CORES}}
@@ -54,10 +50,6 @@ spec:
             - disk:
                 bus: virtio
               name: cloudinitdisk
-
-  
-            
-
           interfaces:
             - masquerade: {}
               name: default

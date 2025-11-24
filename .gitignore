@@ -8,9 +8,12 @@ __pycache__/
 .venv/
 venv/
 env/
+results*/
+excluded-results/
 
 # Logs
 *.log
+*.html
 
 # IDE / Editor configs
 .idea/
@@ -22,3 +25,4 @@ env/
 # Temporary files
 *.tmp
 *.swp
+

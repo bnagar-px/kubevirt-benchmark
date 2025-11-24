@@ -11,18 +11,24 @@ kubevirt-performance-testing/
 ├── README.md                    # Main documentation
 ├── QUICKSTART.md               # Quick start guide
 ├── SETUP.md                    # Detailed setup guide
+├── BOOT_STORM_GUIDE.md         # Boot storm testing guide
+├── CLEANUP_GUIDE.md            # Comprehensive cleanup guide
 ├── CONTRIBUTING.md             # Contribution guidelines
 ├── LICENSE                     # Apache 2.0 License
 ├── requirements.txt            # Python dependencies
 │
-├── registry-clone/             # Registry-based VM provisioning tests
-│   ├── measure-vm-creation-time.py
-│   ├── vm-templates/          # 10 VM templates for load distribution
-│   └── golden-images/         # Golden image PVC definitions
+├── dashboard/                  # Interactive results dashboard
+│   ├── generate_dashboard.py  # Dashboard generation script
+│   ├── cluster_info.yaml      # Cluster metadata template
+│   ├── manual_results.yaml    # Manual test results
+│   └── README.md              # Dashboard documentation
 │
 ├── datasource-clone/           # DataSource-based VM provisioning tests
 │   ├── measure-vm-creation-time.py
 │   └── vm-template.yaml
+│
+├── migration/                  # Live migration performance tests
+│   └── measure-vm-migration-time.py
 │
 ├── failure-recovery/           # Failure and recovery tests
 │   ├── measure-recovery-time.py
@@ -32,12 +38,17 @@ kubevirt-performance-testing/
 │
 ├── utils/                      # Shared utilities
 │   ├── common.py              # Logging, kubectl wrappers, helpers
+│   ├── validate_cluster.py    # Cluster validation script
 │   └── README.md              # Utils documentation
 │
 └── examples/                   # Example configurations
     ├── storage-classes/
     ├── vm-templates/
-    └── ssh-pod.yaml
+    ├── ssh-pod.yaml
+    ├── sequential-migration.sh
+    ├── parallel-migration.sh
+    ├── evacuation-scenario.sh
+    └── round-robin-migration.sh
 ```
 
 ## Key Components
@@ -51,15 +62,18 @@ kubevirt-performance-testing/
 - **Summary Tables**: Formatted output with statistics
 - **Prerequisites Validation**: Pre-flight checks before running tests
 
-#### Registry Clone Script (`registry-clone/measure-vm-creation-time.py`)
+#### DataSource Clone Script (`datasource-clone/measure-vm-creation-time.py`)
 **Features:**
 - Comprehensive command-line argument parsing
 - Configurable namespace prefixes
 - Optional cleanup after tests
 - Detailed logging with multiple levels
 - Better error handling and recovery
-- Round-robin VM template distribution
 - Statistics and performance metrics
+- Boot storm testing capability
+- Single node testing for capacity validation
+- Results export (JSON and CSV)
+- Auto-detection of Portworx version
 - Exit codes for CI/CD integration
 
 **Command-Line Options:**
@@ -67,16 +81,35 @@ kubevirt-performance-testing/
 - `--log-level`: DEBUG/INFO/WARNING/ERROR
 - `--namespace-prefix`: Custom namespace naming
 - `--cleanup`: Auto-delete resources
-- `--skip-namespace-creation`: Use existing namespaces
+- `--boot-storm`: Enable boot storm testing
+- `--single-node`: Pin all VMs to single node
+- `--save-results`: Export results for dashboard
+- `--px-version`: Specify Portworx version
 - `--poll-interval`: Configurable polling
 - `--ping-timeout`: Adjustable timeouts
 
-#### DataSource Clone Script (`datasource-clone/measure-vm-creation-time.py`)
+#### Live Migration Script (`migration/measure-vm-migration-time.py`)
 **Features:**
-- Same capabilities as registry-clone
-- Optimized for Pure FlashArray Direct Access (FADA)
-- Single template with DataSource reference
-- Configurable VM template path
+- Multiple migration scenarios (sequential, parallel, evacuation, round-robin)
+- Parallel migration with configurable concurrency
+- Interleaved scheduling for even load distribution
+- Auto-select busiest node for evacuation
+- Dual timing measurements (observed + VMIM timestamps)
+- Network validation after migration
+- Results export (JSON and CSV)
+- Comprehensive cleanup options
+
+**Migration Scenarios:**
+- **Sequential**: Migrate VMs one by one
+- **Parallel**: Migrate multiple VMs simultaneously with concurrency control
+- **Evacuation**: Evacuate all VMs from a specific node
+- **Round-robin**: Distribute VMs evenly across all nodes
+
+**Advanced Options:**
+- `--interleaved-scheduling`: Distribute migrations evenly across nodes from the start
+- `--skip-ping`: Skip network validation for faster testing
+- `--migration-timeout`: Custom timeout per migration
+- `--save-results`: Export results for dashboard
 
 #### Failure Recovery Script (`failure-recovery/measure-recovery-time.py`)
 **Features:**
@@ -91,6 +124,29 @@ kubevirt-performance-testing/
 - Running + Ready state validation
 - Comprehensive recovery statistics
 - Max/min/average time calculations
+
+#### Dashboard Generator (`dashboard/generate_dashboard.py`)
+**Features:**
+- Interactive HTML dashboard with Bootstrap and Plotly
+- Multi-level organization (PX Version → Disk Count → VM Size)
+- Automatic results discovery from directory structure
+- Time-based filtering (e.g., last N days)
+- Cluster information display
+- Manual results integration
+
+**Dashboard Components:**
+- **Performance Charts**: Bar charts showing creation, boot storm, and migration durations
+- **Detailed Tables**: Sortable, searchable DataTables with all metrics
+- **Summary Statistics**: Aggregated metrics across test runs
+- **Cluster Info Tab**: Display cluster metadata and configuration
+- **Manual Results Tab**: Include manually collected test data
+
+**Configuration:**
+- `--days`: Filter results by date range
+- `--base-dir`: Results directory location
+- `--cluster-info`: Cluster metadata YAML file
+- `--manual-results`: Manual test results YAML file
+- `--output-html`: Output dashboard file path
 
 ### 2. Shell Scripts
 
@@ -221,10 +277,22 @@ kubevirt-performance-testing/
 ## Testing Capabilities
 
 ### VM Creation Performance
-- **Registry Clone Method**: Test VM provisioning from container registry images
 - **DataSource Clone Method**: Test VM provisioning from KubeVirt DataSources
+- **Boot Storm Testing**: Simultaneous VM startup performance testing
+- **Single Node Testing**: Node-level capacity validation
 - **Metrics**: Time to Running, Time to Network Ready, Success Rate
 - **Scale**: Support for 100+ VMs in parallel
+- **Results Export**: JSON and CSV format for dashboard generation
+
+### Live Migration Performance
+- **Sequential Migration**: One-by-one VM migration
+- **Parallel Migration**: Concurrent migrations with configurable concurrency
+- **Evacuation Scenario**: Evacuate all VMs from a node (manual or auto-select busiest)
+- **Round-Robin Migration**: Distribute VMs evenly across all nodes
+- **Interleaved Scheduling**: Even load distribution across nodes from the start
+- **Metrics**: Migration duration (observed + VMIM timestamps), success rate
+- **Network Validation**: Post-migration connectivity testing
+- **Scale**: Support for 400+ VMs with high concurrency
 
 ### Failure Recovery
 - **FAR Integration**: Automated node failure simulation
@@ -236,23 +304,45 @@ kubevirt-performance-testing/
 - **IP Tracking**: Monitor IP address changes
 - **Timeout Handling**: Configurable timeouts
 
+### Results Visualization
+- **Interactive Dashboard**: HTML dashboard with charts and tables
+- **Multi-level Organization**: Results organized by PX version, disk count, VM size
+- **Performance Trends**: Compare metrics across multiple test runs
+- **Cluster Context**: Display cluster configuration alongside results
+
 ## Usage Examples
 
-### Basic Test
+### Basic VM Creation Test
 ```bash
-cd registry-clone
-python3 measure-vm-creation-time.py --start 1 --end 10
+cd datasource-clone
+python3 measure-vm-creation-time.py \
+  --start 1 \
+  --end 10 \
+  --save-results
 ```
 
-### Production Test
+### Boot Storm Test
 ```bash
 python3 measure-vm-creation-time.py \
   --start 1 \
   --end 100 \
-  --concurrency 100 \
-  --log-file results-$(date +%Y%m%d).log \
-  --log-level INFO \
-  --cleanup
+  --boot-storm \
+  --save-results \
+  --log-file boot-storm-$(date +%Y%m%d).log
+```
+
+### Live Migration Test
+```bash
+cd migration
+python3 measure-vm-migration-time.py \
+  --start 1 \
+  --end 200 \
+  --parallel \
+  --concurrency 50 \
+  --skip-ping \
+  --save-results \
+  --migration-timeout 1000 \
+  --interleaved-scheduling
 ```
 
 ### FAR Test
@@ -265,14 +355,30 @@ cd failure-recovery
   --vm-name rhel-9-vm
 ```
 
+### Generate Dashboard
+```bash
+python3 dashboard/generate_dashboard.py \
+  --days 50 \
+  --base-dir results \
+  --cluster-info dashboard/cluster_info.yaml \
+  --manual-results dashboard/manual_results.yaml \
+  --output-html results_dashboard.html
+```
+
 ## File Statistics
 
-- **Python Scripts**: 4 main scripts + 1 utilities module
-- **Shell Scripts**: 2 automation scripts
+- **Python Scripts**: 5 main scripts + 1 utilities module
+  - VM Creation/Boot Storm: `datasource-clone/measure-vm-creation-time.py`
+  - Live Migration: `migration/measure-vm-migration-time.py`
+  - Failure Recovery: `failure-recovery/measure-recovery-time.py`
+  - Dashboard Generator: `dashboard/generate_dashboard.py`
+  - Cluster Validation: `utils/validate_cluster.py`
+  - Common Utilities: `utils/common.py`
+- **Shell Scripts**: 3 automation scripts
 - **YAML Files**: 30+ configuration files
-- **Documentation**: 6 comprehensive guides
-- **Total Lines of Code**: ~3,000+ lines
-- **Total Documentation**: ~2,500+ lines
+- **Documentation**: 8+ comprehensive guides
+- **Total Lines of Code**: ~4,500+ lines
+- **Total Documentation**: ~3,500+ lines
 
 ## Next Steps for Open Sourcing
 

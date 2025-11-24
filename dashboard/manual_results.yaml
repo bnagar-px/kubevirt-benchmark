@@ -1,0 +1,26 @@
+results:
+  - Test: "VM Recovery using FAR operator"
+    Description: "All VMs evacuated from 1 node upon node failure"
+    PX version: "3.5.0"
+    Disks: "4-disk"
+    VMs: 125
+    Total Volumes: 500
+    Total Time: XXXs
+    Average: XXXs
+    Maximum: XXXs
+    Minimum: XXXs
+    Ping checks skipped: True
+    Log file : kubevirt-perf-XXX-XXX.log
+  - Test: "VM Recovery using FAR operator"
+    Description: "All VMs evacuated from 1 node upon node failure"
+    PX version: "3.5.0"
+    Disks: "8-disk"
+    VMs: 125
+    Total Volumes: 1000
+    Total Time: XXXs
+    Average: XXXs
+    Maximum: XXXs
+    Minimum: XXXs
+    Ping checks skipped: True
+    Log file : kubevirt-perf-XXX-XXX.log
+

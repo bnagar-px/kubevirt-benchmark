@@ -1,0 +1,67 @@
+# cluster_info.yaml
+# -----------------------------------------------------------------------------
+# Purpose:
+#   Contains metadata about your KubeVirt test cluster. This information
+#   is displayed in the "Cluster Info" tab of the dashboard.
+#
+# Notes:
+#   - This file is NOT referenced by any other scripts.
+#   - Its sole purpose is to populate the "Cluster Info" tab for informational use.
+#   - You can add your own display content under the "cluster" section
+#     in "key" : "value" format.
+#   - All entries defined under "cluster" will be shown in the dashboard tab.
+# -----------------------------------------------------------------------------
+
+cluster:
+  # The installed Portworx version (e.g., "3.5.0")
+  px_version: "3.5.0"
+
+  # Specific Portworx build identifier or commit hash, if applicable
+  px_build: ""
+
+  # Short description of your Portworx configuration —
+  # e.g., "default PX store-V2 FACD setup", "PX with SharedV4 and replication=3", etc.
+  px_configuration: "default PX store-V2 FACD setup"
+
+  # Type of cluster infrastructure —
+  # could be "Bare Metal", "vSphere" etc.
+  cluster_type: "Bare Metal"
+
+  # FlashArray (Pure Storage FA) URL if your PX setup uses a backend FA
+  fa_url: ""
+
+  #FlashArray model number (e.g., "FA-420", "FA-450") if applicable
+  fa_model: ""
+
+  #Total number of nodes or a description of the node pool (e.g., "5 worker + 3 master")
+  nodes: ""
+
+  # Hardware details of each node in your cluster.
+  # Captured using `lscpu` or similar tools.
+  node_hardware_config: |
+    XXX CPU, XXX Memory
+    Thread(s) per core: XXX
+    Core(s) per socket: XXX
+    Socket(s): XXX
+    Processor: Intel(R) XXXXXX
+
+  # Network bandwidth per node or interconnect capacity — e.g., "25 Gbps", "100 Gbps"
+  network: XXX Gbps
+
+  # The OpenShift Container Platform version running on the cluster
+  openshift_version: 4.XX.XX
+
+  # The OpenShift Virtualization (KubeVirt) operator version installed
+  openshift_virtualization_version: 4.XX.XX
+
+  # Live migration tuning parameters from KubeVirt configuration.
+  # These control the number of VMs that can migrate simultaneously.
+  live_migration_settings: | 
+    Parallel Migrations Per Cluster: 25          # Max concurrent migrations allowed cluster-wide
+    Parallel Outbound Migrations Per Node: 5     # Max migrations a single node can send at once
+
+  # Live migration script settings
+  live_migration_script_settings: |
+    concurrency: 50
+    vm_distribution: "equally distributed per node e.g. 400VMs are distributed as 1-80 on node 1, 
+    81-160 on node 2, 161-240 on node 3 and so on"

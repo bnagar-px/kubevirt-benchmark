@@ -165,6 +165,12 @@ Examples:
         help='Skip confirmation prompt for cleanup (use with caution)'
     )
 
+    parser.add_argument(
+        '--skip-ping',
+        action='store_true',
+        help='Skip ping recovery checks and only measure VMI Running time'
+    )
+
     args = parser.parse_args()
     
     # Validation
@@ -300,7 +306,7 @@ def wait_for_ping_recovery(ns: str, vmi_name: str, ssh_pod: str, ssh_pod_ns: str
 
 
 def monitor_recovery(ns: str, vmi_name: str, start_ts: datetime, ssh_pod: str, ssh_pod_ns: str,
-                     poll_interval: int, logger) -> Tuple[str, str, float, str, float]:
+                     poll_interval: int, logger, skip_ping: bool) -> Tuple[str, str, float, str, float]:
     """
     Monitor a single VMI recovery.
     
@@ -321,10 +327,14 @@ def monitor_recovery(ns: str, vmi_name: str, start_ts: datetime, ssh_pod: str, s
         ip_running, time_running = wait_for_vmi_running(ns, vmi_name, start_ts, poll_interval, logger)
         
         # Wait for ping
-        ip_ping, time_ping = wait_for_ping_recovery(
-            ns, vmi_name, ssh_pod, ssh_pod_ns, start_ts, poll_interval, logger
-        )
-        
+        ip_ping, time_ping = '', None
+        if not skip_ping:
+            ip_ping, time_ping = wait_for_ping_recovery(
+                ns, vmi_name, ssh_pod, ssh_pod_ns, start_ts, poll_interval, logger
+            )
+        else:
+            logger.info(f"[{ns}] Skipping ping recovery check (--skip-ping enabled)")
+
         return ns, ip_running, time_running, ip_ping, time_ping
     
     except Exception as e:
@@ -365,7 +375,7 @@ def main():
         futures = {
             executor.submit(
                 monitor_recovery, ns, args.vm_name, start_ts,
-                args.ssh_pod, args.ssh_pod_ns, args.poll_interval, logger
+                args.ssh_pod, args.ssh_pod_ns, args.poll_interval, logger, args.skip_ping
             ): ns
             for ns in namespaces
         }
@@ -389,11 +399,19 @@ def main():
     
     running_times = []
     ping_times = []
-    
+
+    if args.skip_ping:
+        print("\nPing recovery checks were skipped (--skip-ping enabled)")
+
     for ns, ip_run, t_run, ip_ping, t_ping in sorted(results, key=lambda x: x[0]):
         run_str = f"{t_run:.2f}" if t_run is not None else 'Failed'
-        ping_str = f"{t_ping:.2f}" if t_ping is not None else 'Failed'
-        
+        if args.skip_ping:
+            ping_str = 'Skipped'
+        elif t_ping is not None:
+            ping_str = f"{t_ping:.2f}"
+        else:
+            ping_str = 'Failed'
+
         print(f"{ns:<30}{run_str:<15}{ping_str:<15}{ip_run:<20}{ip_ping:<20}")
         
         if t_run is not None:
@@ -406,8 +424,14 @@ def main():
     # Print statistics
     print(f"\n{'Recovery Statistics:'}")
     print(f"  Total VMIs:                {len(results)}")
-    print(f"  Successfully recovered:    {len(ping_times)}")
-    print(f"  Failed to recover:         {len(results) - len(ping_times)}")
+
+    if args.skip_ping:
+        print(f"  Ping checks skipped:       True")
+        print(f"  Successfully reached Running: {len(running_times)}")
+        print(f"  Failed to reach Running:      {len(results) - len(running_times)}")
+    else:
+        print(f"  Successfully recovered (ping): {len(ping_times)}")
+        print(f"  Failed to recover (ping):     {len(results) - len(ping_times)}")
     
     if running_times:
         print(f"\n  Time to Running:")
@@ -530,6 +554,11 @@ def main():
     logger.info("\nRecovery test completed successfully!")
 
     # Exit with error code if any VMs failed
+    if args.skip_ping:
+        failed_count = len(results) - len(running_times)
+    else:
+        failed_count = len(results) - len(ping_times)
+
     sys.exit(0 if failed_count == 0 else 1)
 
 

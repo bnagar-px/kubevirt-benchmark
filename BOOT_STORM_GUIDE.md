@@ -56,20 +56,21 @@ Compare initial creation vs boot storm metrics to understand:
 ### Basic Boot Storm Test (Multi-Node)
 
 ```bash
-cd registry-clone
+cd datasource-clone
 
 # VMs distributed across all nodes
 python3 measure-vm-creation-time.py \
   --start 1 \
   --end 50 \
   --vm-name rhel-9-vm \
-  --boot-storm
+  --boot-storm \
+  --save-results
 ```
 
 ### Single Node Boot Storm Test
 
 ```bash
-cd registry-clone
+cd datasource-clone
 
 # Auto-select a random node
 python3 measure-vm-creation-time.py \
@@ -77,7 +78,8 @@ python3 measure-vm-creation-time.py \
   --end 50 \
   --vm-name rhel-9-vm \
   --single-node \
-  --boot-storm
+  --boot-storm \
+  --save-results
 
 # Or specify a specific node
 python3 measure-vm-creation-time.py \
@@ -86,7 +88,8 @@ python3 measure-vm-creation-time.py \
   --vm-name rhel-9-vm \
   --single-node \
   --node-name worker-node-1 \
-  --boot-storm
+  --boot-storm \
+  --save-results
 ```
 
 ### Advanced Boot Storm Test
@@ -100,6 +103,7 @@ python3 measure-vm-creation-time.py \
   --namespace-batch-size 30 \
   --boot-storm \
   --concurrency 100 \
+  --save-results \
   --log-file boot-storm-$(date +%Y%m%d-%H%M%S).log \
   --log-level INFO
 ```
@@ -112,6 +116,7 @@ python3 measure-vm-creation-time.py \
 - `--namespace-batch-size 30`: Creates 30 namespaces in parallel (faster setup)
 - `--concurrency 100`: Monitors up to 100 VMs in parallel
 - `--start 1 --end 100`: Tests with 100 VMs
+- `--save-results`: Saves detailed results (JSON and CSV) for dashboard generation
 
 ## Example Output
 
@@ -310,7 +315,8 @@ python3 measure-vm-creation-time.py \
   --start 1 --end 50 \
   --single-node \
   --boot-storm \
-  --namespace-batch-size 25
+  --namespace-batch-size 25 \
+  --save-results
 ```
 
 ### Scenario 2: Planned Maintenance
@@ -320,7 +326,8 @@ python3 measure-vm-creation-time.py \
 python3 measure-vm-creation-time.py \
   --start 1 --end 200 \
   --boot-storm \
-  --namespace-batch-size 40
+  --namespace-batch-size 40 \
+  --save-results
 ```
 
 ### Scenario 3: Disaster Recovery
@@ -331,20 +338,27 @@ python3 measure-vm-creation-time.py \
   --start 1 --end 500 \
   --boot-storm \
   --concurrency 200 \
-  --ping-timeout 1200
+  --ping-timeout 1200 \
+  --save-results
 ```
 
 ### Scenario 4: Storage Backend Comparison
 **Goal**: Compare Portworx vs FADA performance
 
 ```bash
-# Test with standard Portworx
+# Test with standard Portworx (if you have a registry-clone setup)
 cd registry-clone
-python3 measure-vm-creation-time.py --start 1 --end 100 --boot-storm
+python3 measure-vm-creation-time.py \
+  --start 1 --end 100 \
+  --boot-storm \
+  --save-results
 
 # Test with FADA
 cd ../datasource-clone
-python3 measure-vm-creation-time.py --start 1 --end 100 --boot-storm
+python3 measure-vm-creation-time.py \
+  --start 1 --end 100 \
+  --boot-storm \
+  --save-results
 ```
 
 ### Scenario 5: Single Node vs Multi-Node Comparison
@@ -356,12 +370,14 @@ python3 measure-vm-creation-time.py \
   --start 1 --end 50 \
   --single-node \
   --boot-storm \
+  --save-results \
   --log-file single-node-boot-storm.log
 
 # Multi-node test
 python3 measure-vm-creation-time.py \
   --start 1 --end 50 \
   --boot-storm \
+  --save-results \
   --log-file multi-node-boot-storm.log
 ```
 
@@ -373,6 +389,7 @@ The test automatically cleans up if you use `--cleanup`:
 python3 measure-vm-creation-time.py \
   --start 1 --end 50 \
   --boot-storm \
+  --save-results \
   --cleanup
 ```
 
@@ -385,6 +402,27 @@ done
 wait
 ```
 
+## Visualizing Results
+
+After running boot storm tests with `--save-results`, generate an interactive dashboard to visualize your results:
+
+```bash
+# Generate dashboard from all saved results
+python3 dashboard/generate_dashboard.py \
+  --days 30 \
+  --base-dir results \
+  --cluster-info dashboard/cluster_info.yaml \
+  --output-html boot-storm-dashboard.html
+```
+
+The dashboard will show:
+- Boot storm performance charts comparing creation vs boot storm metrics
+- Detailed tables with all timing data
+- Performance trends across multiple test runs
+- Comparison across different VM counts and configurations
+
+See [dashboard/README.md](dashboard/README.md) for detailed dashboard usage.
+
 ## Summary
 
 Boot storm testing is essential for:
@@ -394,5 +432,9 @@ Boot storm testing is essential for:
 - ✅ Planning for disaster recovery
 - ✅ Capacity planning and sizing
 
-Run boot storm tests regularly to ensure your infrastructure can handle concurrent VM startups!
+**Recommended Workflow:**
+1. Run boot storm tests with `--save-results`
+2. Generate interactive dashboard to visualize results
+3. Analyze performance trends and identify bottlenecks
+4. Run tests regularly to ensure your infrastructure can handle concurrent VM startups!
 

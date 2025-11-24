@@ -39,6 +39,7 @@ python3 measure-vm-creation-time.py \
   --start 1 \
   --end 50 \
   --vm-name rhel-9-vm \
+  --save-results \
   --cleanup
 ```
 
@@ -49,6 +50,7 @@ python3 measure-vm-creation-time.py \
   --start 1 \
   --end 50 \
   --vm-name rhel-9-vm \
+  --save-results \
   --cleanup-on-failure
 ```
 
@@ -69,6 +71,7 @@ python3 measure-vm-creation-time.py \
   --start 1 \
   --end 100 \
   --vm-name rhel-9-vm \
+  --save-results \
   --cleanup \
   --yes
 ```
@@ -81,6 +84,7 @@ python3 measure-vm-creation-time.py \
   --end 50 \
   --vm-name rhel-9-vm \
   --boot-storm \
+  --save-results \
   --cleanup
 ```
 
@@ -102,6 +106,7 @@ python3 measure-vm-migration-time.py \
   --end 50 \
   --source-node worker-1 \
   --target-node worker-2 \
+  --save-results \
   --cleanup
 ```
 
@@ -113,6 +118,7 @@ python3 measure-vm-migration-time.py \
   --end 50 \
   --create-vms \
   --source-node worker-1 \
+  --save-results \
   --cleanup
 ```
 
@@ -124,6 +130,7 @@ python3 measure-vm-migration-time.py \
   --end 100 \
   --evacuate \
   --source-node worker-3 \
+  --save-results \
   --cleanup
 ```
 
