@@ -48,6 +48,10 @@ var (
 	dsNamespaceBatchSize  int
 	dsSingleNode          bool
 	dsNodeName            string
+	dsSaveResults         bool
+	dsResultsFolder       string
+	dsPxVersion           string
+	dsPxNamespace         string
 )
 
 func init() {
@@ -85,6 +89,12 @@ func init() {
 	// Single node testing
 	datasourceCloneCmd.Flags().BoolVar(&dsSingleNode, "single-node", false, "run all VMs on a single node")
 	datasourceCloneCmd.Flags().StringVar(&dsNodeName, "node-name", "", "specific node name for single-node testing")
+
+	// Results saving
+	datasourceCloneCmd.Flags().BoolVar(&dsSaveResults, "save-results", false, "save detailed results (JSON and CSV) to results folder")
+	datasourceCloneCmd.Flags().StringVar(&dsResultsFolder, "results-folder", "../results", "base directory to store test results")
+	datasourceCloneCmd.Flags().StringVar(&dsPxVersion, "px-version", "", "Portworx version to include in results path (auto-detect if not provided)")
+	datasourceCloneCmd.Flags().StringVar(&dsPxNamespace, "px-namespace", "portworx", "namespace where Portworx is installed")
 }
 
 func runDatasourceClone(cmd *cobra.Command, args []string) error {
@@ -121,6 +131,10 @@ func runDatasourceClone(cmd *cobra.Command, args []string) error {
 		"namespace-batch-size":    dsNamespaceBatchSize,
 		"single-node":             dsSingleNode,
 		"node-name":               dsNodeName,
+		"save-results":            dsSaveResults,
+		"results-folder":          dsResultsFolder,
+		"px-version":              dsPxVersion,
+		"px-namespace":            dsPxNamespace,
 		"log-level":               logLevel,
 	}
 

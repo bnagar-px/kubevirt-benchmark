@@ -29,30 +29,36 @@ measuring migration time, downtime, and throughput.`,
 }
 
 var (
-	migStart             int
-	migEnd               int
-	migVMName            string
-	migNamespacePrefix   string
-	migCreateVMs         bool
-	migVMTemplate        string
-	migSingleNode        bool
-	migNodeName          string
-	migSourceNode        string
-	migTargetNode        string
-	migParallel          bool
-	migEvacuate          bool
-	migAutoSelectBusiest bool
-	migRoundRobin        bool
-	migConcurrency       int
-	migMigrationTimeout  int
-	migSSHPod            string
-	migSSHPodNS          string
-	migPingTimeout       int
-	migSkipPing          bool
-	migCleanup           bool
-	migCleanupOnFailure  bool
-	migDryRunCleanup     bool
-	migYes               bool
+	migStart                 int
+	migEnd                   int
+	migVMName                string
+	migNamespacePrefix       string
+	migCreateVMs             bool
+	migVMTemplate            string
+	migSingleNode            bool
+	migNodeName              string
+	migSourceNode            string
+	migTargetNode            string
+	migParallel              bool
+	migEvacuate              bool
+	migAutoSelectBusiest     bool
+	migRoundRobin            bool
+	migConcurrency           int
+	migMigrationTimeout      int
+	migSSHPod                string
+	migSSHPodNS              string
+	migPingTimeout           int
+	migSkipPing              bool
+	migCleanup               bool
+	migCleanupOnFailure      bool
+	migDryRunCleanup         bool
+	migYes                   bool
+	migSkipChecks            bool
+	migInterleavedScheduling bool
+	migSaveResults           bool
+	migResultsFolder         string
+	migPxVersion             string
+	migPxNamespace           string
 )
 
 func init() {
@@ -95,6 +101,16 @@ func init() {
 	migrationCmd.Flags().BoolVar(&migCleanupOnFailure, "cleanup-on-failure", false, "clean up resources even if tests fail")
 	migrationCmd.Flags().BoolVar(&migDryRunCleanup, "dry-run-cleanup", false, "show what would be deleted without actually deleting")
 	migrationCmd.Flags().BoolVar(&migYes, "yes", false, "skip confirmation prompt for cleanup")
+
+	// Migration optimization options
+	migrationCmd.Flags().BoolVar(&migSkipChecks, "skip-checks", false, "skip VM verifications before migration")
+	migrationCmd.Flags().BoolVar(&migInterleavedScheduling, "interleaved-scheduling", false, "distribute parallel migrations in interleaved pattern across nodes")
+
+	// Results saving
+	migrationCmd.Flags().BoolVar(&migSaveResults, "save-results", false, "save detailed migration results (JSON and CSV) to results folder")
+	migrationCmd.Flags().StringVar(&migResultsFolder, "results-folder", "../results", "base directory to store test results")
+	migrationCmd.Flags().StringVar(&migPxVersion, "px-version", "", "Portworx version to include in results path (auto-detect if not provided)")
+	migrationCmd.Flags().StringVar(&migPxNamespace, "px-namespace", "portworx", "namespace where Portworx is installed")
 }
 
 func runMigration(cmd *cobra.Command, args []string) error {
@@ -112,31 +128,37 @@ func runMigration(cmd *cobra.Command, args []string) error {
 
 	// Build arguments for Python script
 	flagMap := map[string]interface{}{
-		"start":               migStart,
-		"end":                 migEnd,
-		"vm-name":             migVMName,
-		"namespace-prefix":    migNamespacePrefix,
-		"create-vms":          migCreateVMs,
-		"vm-template":         vmTemplatePath,
-		"single-node":         migSingleNode,
-		"node-name":           migNodeName,
-		"source-node":         migSourceNode,
-		"target-node":         migTargetNode,
-		"parallel":            migParallel,
-		"evacuate":            migEvacuate,
-		"auto-select-busiest": migAutoSelectBusiest,
-		"round-robin":         migRoundRobin,
-		"concurrency":         migConcurrency,
-		"migration-timeout":   migMigrationTimeout,
-		"ssh-pod":             migSSHPod,
-		"ssh-pod-ns":          migSSHPodNS,
-		"ping-timeout":        migPingTimeout,
-		"skip-ping":           migSkipPing,
-		"cleanup":             migCleanup,
-		"cleanup-on-failure":  migCleanupOnFailure,
-		"dry-run-cleanup":     migDryRunCleanup,
-		"yes":                 migYes,
-		"log-level":           logLevel,
+		"start":                  migStart,
+		"end":                    migEnd,
+		"vm-name":                migVMName,
+		"namespace-prefix":       migNamespacePrefix,
+		"create-vms":             migCreateVMs,
+		"vm-template":            vmTemplatePath,
+		"single-node":            migSingleNode,
+		"node-name":              migNodeName,
+		"source-node":            migSourceNode,
+		"target-node":            migTargetNode,
+		"parallel":               migParallel,
+		"evacuate":               migEvacuate,
+		"auto-select-busiest":    migAutoSelectBusiest,
+		"round-robin":            migRoundRobin,
+		"concurrency":            migConcurrency,
+		"migration-timeout":      migMigrationTimeout,
+		"ssh-pod":                migSSHPod,
+		"ssh-pod-ns":             migSSHPodNS,
+		"ping-timeout":           migPingTimeout,
+		"skip-ping":              migSkipPing,
+		"cleanup":                migCleanup,
+		"cleanup-on-failure":     migCleanupOnFailure,
+		"dry-run-cleanup":        migDryRunCleanup,
+		"yes":                    migYes,
+		"skip-checks":            migSkipChecks,
+		"interleaved-scheduling": migInterleavedScheduling,
+		"save-results":           migSaveResults,
+		"results-folder":         migResultsFolder,
+		"px-version":             migPxVersion,
+		"px-namespace":           migPxNamespace,
+		"log-level":              logLevel,
 	}
 
 	// Add log file if specified
