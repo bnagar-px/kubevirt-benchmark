@@ -49,7 +49,13 @@ check_python() {
 install_python_deps() {
     print_info "Installing Python dependencies..."
     if [ -f "requirements.txt" ]; then
-        pip3 install -r requirements.txt || print_warning "Failed to install some Python dependencies"
+        if pip3 install -r requirements.txt; then
+            print_info "Python dependencies installed successfully"
+        else
+            print_error "Failed to install Python dependencies!"
+            print_error "Please run manually: pip3 install -r requirements.txt"
+            print_warning "Continuing installation, but Python scripts may not work..."
+        fi
     else
         print_warning "requirements.txt not found, skipping Python dependencies"
     fi

@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"os"
+	"io/ioutil"
 	"path/filepath"
 
 	"github.com/spf13/cobra"
@@ -129,17 +129,33 @@ func runMigration(cmd *cobra.Command, args []string) error {
 		vmTemplatePath = filepath.Join(repoRoot, vmTemplatePath)
 	}
 
-	// If storage class is specified, modify the template
+	// If storage class is specified, modify the template in-place
+	var originalContent []byte
 	if migStorageClass != "" {
-		fmt.Printf("Modifying template to use storage class: %s\n", migStorageClass)
-		modifiedPath, err := modifyStorageClassInYAML(vmTemplatePath, migStorageClass)
+		fmt.Printf("Using storage class: %s\n", migStorageClass)
+
+		// Read original content for backup
+		var err error
+		originalContent, err = ioutil.ReadFile(vmTemplatePath)
+		if err != nil {
+			return fmt.Errorf("failed to read template file: %w", err)
+		}
+
+		// Get modified content
+		modifiedContent, err := modifyStorageClassInYAML(vmTemplatePath, migStorageClass)
 		if err != nil {
 			return fmt.Errorf("failed to modify storage class in template: %w", err)
 		}
-		// Clean up temp file after script completes
-		defer os.Remove(modifiedPath)
-		vmTemplatePath = modifiedPath
-		fmt.Printf("Using modified template: %s\n", modifiedPath)
+
+		// Write modified content to original file
+		if err := ioutil.WriteFile(vmTemplatePath, []byte(modifiedContent), 0644); err != nil {
+			return fmt.Errorf("failed to write modified template: %w", err)
+		}
+
+		// Restore original content after script completes
+		defer func() {
+			ioutil.WriteFile(vmTemplatePath, originalContent, 0644)
+		}()
 	}
 
 	// Build arguments for Python script

@@ -128,6 +128,7 @@ This suite  includes **virtbench**, a unified command-line interface that provid
 # Install the CLI
 git clone https://github.com/your-org/kubevirt-benchmark-suite.git
 cd kubevirt-benchmark-suite
+pip3 install -r requirements.txt
 ./install.sh
 
 When using the `virtbench` CLI, the tool needs to locate the repository directory to access Python scripts and templates. The CLI automatically searches for the repository in the following order:

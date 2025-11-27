@@ -156,8 +156,8 @@ func printBanner(title string) {
 	fmt.Println()
 }
 
-// modifyStorageClassInYAML modifies the storageClassName in a VM template YAML file
-// and returns the path to the modified temporary file
+// modifyStorageClassInYAML modifies the storageClassName in a VM template YAML file in-memory
+// and returns the modified YAML content as a string
 func modifyStorageClassInYAML(templatePath, storageClass string) (string, error) {
 	// Read the YAML file
 	data, err := ioutil.ReadFile(templatePath)
@@ -165,7 +165,16 @@ func modifyStorageClassInYAML(templatePath, storageClass string) (string, error)
 		return "", fmt.Errorf("failed to read template file: %w", err)
 	}
 
-	// Parse YAML
+	// Simple string replacement approach - faster and cleaner
+	content := string(data)
+
+	// Replace {{STORAGE_CLASS_NAME}} placeholder
+	if strings.Contains(content, "{{STORAGE_CLASS_NAME}}") {
+		content = strings.ReplaceAll(content, "{{STORAGE_CLASS_NAME}}", storageClass)
+		return content, nil
+	}
+
+	// If no placeholder, parse YAML and modify the field
 	var doc map[string]interface{}
 	if err := yaml.Unmarshal(data, &doc); err != nil {
 		return "", fmt.Errorf("failed to parse YAML: %w", err)
@@ -189,7 +198,7 @@ func modifyStorageClassInYAML(templatePath, storageClass string) (string, error)
 	}
 
 	if !modified {
-		return "", fmt.Errorf("could not find storageClassName field in template")
+		return "", fmt.Errorf("could not find storageClassName field or {{STORAGE_CLASS_NAME}} placeholder in template")
 	}
 
 	// Marshal back to YAML
@@ -198,18 +207,5 @@ func modifyStorageClassInYAML(templatePath, storageClass string) (string, error)
 		return "", fmt.Errorf("failed to marshal modified YAML: %w", err)
 	}
 
-	// Create temporary file
-	tmpFile, err := ioutil.TempFile("", "vm-template-*.yaml")
-	if err != nil {
-		return "", fmt.Errorf("failed to create temp file: %w", err)
-	}
-	defer tmpFile.Close()
-
-	// Write modified YAML to temp file
-	if _, err := tmpFile.Write(modifiedData); err != nil {
-		os.Remove(tmpFile.Name())
-		return "", fmt.Errorf("failed to write temp file: %w", err)
-	}
-
-	return tmpFile.Name(), nil
+	return string(modifiedData), nil
 }
