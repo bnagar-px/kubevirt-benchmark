@@ -1,0 +1,11 @@
+"""
+virtbench - KubeVirt Benchmark Suite CLI
+
+A comprehensive performance testing toolkit for KubeVirt virtual machines
+running on OpenShift Container Platform (OCP).
+"""
+
+__version__ = '1.0.0'
+__author__ = 'Portworx'
+__license__ = 'Apache 2.0'
+

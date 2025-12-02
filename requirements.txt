@@ -1,5 +1,10 @@
 # Python dependencies for KubeVirt Performance Testing Suite
 # Python 3.6+ required
 
+# Core dependencies
 pandas~=2.3.3
 pyyaml~=6.0.3
+
+# CLI dependencies
+click~=8.1.7
+rich~=13.7.0

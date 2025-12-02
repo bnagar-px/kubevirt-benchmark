@@ -1,0 +1,122 @@
+#!/usr/bin/env python3
+"""
+virtbench - KubeVirt Benchmark Suite CLI
+
+Main entry point for the virtbench command-line interface.
+"""
+import click
+from pathlib import Path
+
+from virtbench.common import find_repo_root
+from virtbench.commands import (
+    datasource_clone,
+    migration,
+    capacity,
+    failure_recovery,
+    validate,
+    version,
+)
+
+
+class Context:
+    """Global context for sharing state between commands"""
+    
+    def __init__(self):
+        self.log_level = 'info'
+        self.log_file = None
+        self.kubeconfig = None
+        self.timeout = '4h'
+        self.uuid = None
+        self.repo_root = None
+    
+    def initialize(self):
+        """Initialize context (find repo root)"""
+        try:
+            self.repo_root = find_repo_root()
+        except RuntimeError as e:
+            click.echo(f"Error: {e}", err=True)
+            raise click.Abort()
+
+
+@click.group()
+@click.version_option(version='1.0.0', prog_name='virtbench')
+@click.option('--log-level', 
+              default='info',
+              type=click.Choice(['debug', 'info', 'warn', 'error'], case_sensitive=False),
+              help='Log level')
+@click.option('--log-file', 
+              type=click.Path(),
+              help='Log file path (auto-generated if not specified)')
+@click.option('--kubeconfig', 
+              type=click.Path(exists=True),
+              help='Path to kubeconfig file')
+@click.option('--timeout', 
+              default='4h',
+              help='Benchmark timeout (default: 4h)')
+@click.option('--uuid', 
+              help='Benchmark UUID (auto-generated if not specified)')
+@click.pass_context
+def cli(ctx, log_level, log_file, kubeconfig, timeout, uuid):
+    """
+    virtbench - KubeVirt Benchmark Suite
+    
+    Performance testing toolkit for KubeVirt virtual machines running on
+    OpenShift Container Platform (OCP).
+    
+    \b
+    Available Commands:
+      datasource-clone     Run DataSource clone benchmark
+      migration            Run VM migration benchmark
+      capacity-benchmark   Run capacity benchmark
+      failure-recovery     Run failure recovery benchmark
+      validate-cluster     Validate cluster prerequisites
+      version              Print version information
+    
+    \b
+    Examples:
+      # Validate cluster
+      virtbench validate-cluster --storage-class fada-raw-sc
+      
+      # Run datasource clone test
+      virtbench datasource-clone --start 1 --end 10 --storage-class fada-raw-sc
+      
+      # Run migration test
+      virtbench migration --start 1 --end 5 --source-node worker-1
+    
+    \b
+    Global Flags:
+      --log-level          Log level: debug, info, warn, error (default: info)
+      --log-file           Log file path (auto-generated if not specified)
+      --kubeconfig         Path to kubeconfig file
+      --timeout            Benchmark timeout (default: 4h)
+      --uuid               Benchmark UUID (auto-generated if not specified)
+    """
+    # Create context object
+    ctx.obj = Context()
+    ctx.obj.log_level = log_level.lower()
+    ctx.obj.log_file = log_file
+    ctx.obj.kubeconfig = kubeconfig
+    ctx.obj.timeout = timeout
+    ctx.obj.uuid = uuid
+    
+    # Initialize context (find repo root)
+    ctx.obj.initialize()
+
+
+# Register subcommands
+cli.add_command(datasource_clone.datasource_clone)
+cli.add_command(migration.migration)
+cli.add_command(capacity.capacity_benchmark)
+cli.add_command(failure_recovery.failure_recovery)
+cli.add_command(validate.validate_cluster)
+cli.add_command(version.version)
+
+
+def main():
+    """Entry point for CLI"""
+    cli(obj=None)
+
+
+if __name__ == '__main__':
+    main()
+
