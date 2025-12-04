@@ -1,11 +1,11 @@
 #!/bin/bash
 # Template Application Helper Script
-# 
+#
 # This script helps apply template variables to VM template files
-# 
+#
 # Usage:
 #   ./apply_template.sh --template vm-template.yaml --output my-vm.yaml \
-#     --vm-name my-vm --storage-class portworx-fada-sc
+#     --vm-name my-vm --storage-class YOUR-STORAGE-CLASS
 
 set -e
 
@@ -17,7 +17,7 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 TEMPLATE_FILE="$REPO_ROOT/examples/vm-templates/vm-template.yaml"
 OUTPUT_FILE=""
 VM_NAME="rhel-9-vm"
-STORAGE_CLASS_NAME="portworx-fada-sc"
+STORAGE_CLASS_NAME=""
 DATASOURCE_NAME="rhel9"
 DATASOURCE_NAMESPACE="openshift-virtualization-os-images"
 STORAGE_SIZE="30Gi"
@@ -41,7 +41,7 @@ OPTIONS:
     -t, --template FILE          Template file path (default: ../examples/vm-templates/vm-template.yaml)
     -o, --output FILE            Output file path (required)
     -n, --vm-name NAME           VM name (default: rhel-9-vm)
-    -s, --storage-class NAME     Storage class name (default: portworx-fada-sc)
+    -s, --storage-class NAME     Storage class name (required)
     -d, --datasource NAME        DataSource name (default: rhel9)
     --datasource-namespace NS    DataSource namespace (default: openshift-virtualization-os-images)
     --storage-size SIZE          Storage size (default: 30Gi)
@@ -51,19 +51,19 @@ OPTIONS:
 
 EXAMPLES:
     # Basic usage with custom VM name and storage class
-    $0 -o my-vm.yaml -n my-vm -s portworx-raw-sc
+    $0 -o my-vm.yaml -n my-vm -s YOUR-STORAGE-CLASS
 
     # Full customization
     $0 -o custom-vm.yaml \\
         -n custom-vm \\
-        -s portworx-fada-sc \\
+        -s YOUR-STORAGE-CLASS \\
         -d fedora \\
         --storage-size 50Gi \\
         --memory 4Gi \\
         --cpu-cores 2
 
     # Apply and create VM directly
-    $0 -o /tmp/vm.yaml -n test-vm -s portworx-fada-sc && kubectl apply -f /tmp/vm.yaml -n test-namespace
+    $0 -o /tmp/vm.yaml -n test-vm -s YOUR-STORAGE-CLASS && kubectl apply -f /tmp/vm.yaml -n test-namespace
 
 EOF
     exit 1
@@ -121,6 +121,11 @@ done
 # Validate required arguments
 if [ -z "$OUTPUT_FILE" ]; then
     echo -e "${RED}Error: Output file is required (-o/--output)${NC}"
+    usage
+fi
+
+if [ -z "$STORAGE_CLASS_NAME" ]; then
+    echo -e "${RED}Error: Storage class is required (-s/--storage-class)${NC}"
     usage
 fi
 

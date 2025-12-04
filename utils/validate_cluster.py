@@ -6,7 +6,7 @@ This script validates that the cluster is ready for running KubeVirt benchmarks.
 It checks for required components, resources, and configurations.
 
 Usage:
-    python3 validate_cluster.py --storage-class portworx-fada-sc
+    python3 validate_cluster.py --storage-class YOUR-STORAGE-CLASS
     python3 validate_cluster.py --all
 """
 
@@ -309,13 +309,13 @@ def parse_args():
         epilog="""
 Examples:
   # Validate with specific storage class
-  %(prog)s --storage-class portworx-fada-sc
-  
+  %(prog)s --storage-class YOUR-STORAGE-CLASS
+
   # Validate all components
   %(prog)s --all
-  
+
   # Validate with custom DataSource
-  %(prog)s --storage-class portworx-fada-sc --datasource rhel9 --datasource-namespace openshift-virtualization-os-images
+  %(prog)s --storage-class YOUR-STORAGE-CLASS --datasource rhel9 --datasource-namespace openshift-virtualization-os-images
         """
     )
     

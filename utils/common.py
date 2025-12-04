@@ -16,6 +16,10 @@ import os
 from typing import Optional, Tuple, List
 import csv
 
+# Minimum required Python version
+MIN_PYTHON_VERSION = (3, 8)
+
+
 class Colors:
     """ANSI color codes for terminal output."""
     HEADER = '\033[95m'
@@ -27,6 +31,48 @@ class Colors:
     ENDC = '\033[0m'
     BOLD = '\033[1m'
     UNDERLINE = '\033[4m'
+
+
+def check_python_version(logger: Optional[logging.Logger] = None) -> bool:
+    """
+    Check if the current Python version meets the minimum requirement.
+
+    Args:
+        logger: Optional logger instance for output
+
+    Returns:
+        True if Python version is sufficient, False otherwise
+    """
+    current_version = sys.version_info[:2]
+    min_version = MIN_PYTHON_VERSION
+
+    if current_version < min_version:
+        error_msg = (
+            f"Python {min_version[0]}.{min_version[1]}+ is required. "
+            f"Found Python {current_version[0]}.{current_version[1]}. "
+            f"Please upgrade your Python installation."
+        )
+        if logger:
+            logger.error(f"[FAIL] {error_msg}")
+        else:
+            print(f"{Colors.FAIL}ERROR: {error_msg}{Colors.ENDC}", file=sys.stderr)
+        return False
+
+    if logger:
+        logger.info(f"[OK] Python version {current_version[0]}.{current_version[1]} meets requirement (>= {min_version[0]}.{min_version[1]})")
+
+    return True
+
+
+def require_python_version():
+    """
+    Check Python version and exit if it doesn't meet the minimum requirement.
+
+    This function should be called at the start of main scripts to ensure
+    the Python version is sufficient before proceeding.
+    """
+    if not check_python_version():
+        sys.exit(1)
 
 
 def setup_logging(log_file: Optional[str] = None, log_level: str = 'INFO') -> logging.Logger:
@@ -1275,6 +1321,7 @@ def calculate_vmim_duration(start_timestamp: str, end_timestamp: str) -> Optiona
 
 
 def wait_for_migration_complete(vm_name: str, namespace: str, timeout: int = 600,
+                                poll_interval: int = 2,
                                 logger: Optional[logging.Logger] = None) -> Tuple[bool, float, Optional[str], Optional[float]]:
     """
     Wait for VM migration to complete.
@@ -1283,6 +1330,7 @@ def wait_for_migration_complete(vm_name: str, namespace: str, timeout: int = 600
         vm_name: Name of the VM
         namespace: Namespace of the VM
         timeout: Maximum time to wait in seconds
+        poll_interval: Seconds between status checks (default: 2)
         logger: Logger instance
 
     Returns:
@@ -1326,7 +1374,7 @@ def wait_for_migration_complete(vm_name: str, namespace: str, timeout: int = 600
                 logger.error(f"[{namespace}] Migration failed for VM {vm_name}")
             return False, time.time() - start_time, None, None
 
-        time.sleep(2)
+        time.sleep(poll_interval)
 
     # Timeout
     if logger:
@@ -1839,6 +1887,10 @@ def validate_prerequisites(ssh_pod: str, ssh_pod_ns: str, logger: logging.Logger
     """
     logger.info("Validating prerequisites...")
 
+    # Check Python version first (hard requirement)
+    if not check_python_version(logger):
+        return False
+
     # Check kubectl connectivity
     try:
         run_kubectl_command(['cluster-info'], logger=logger)
@@ -1863,41 +1915,6 @@ def validate_prerequisites(ssh_pod: str, ssh_pod_ns: str, logger: logging.Logger
         logger.warning(f"[WARN] Error checking SSH pod: {e}")
 
     return True
-
-def get_px_version_from_cluster(logger=None, namespace="portworx") -> str:
-    """
-    Detect Portworx version from the running StorageCluster (stc) in namespace 'portworx'.
-    Returns the version string or 'unknown' if not found.
-    """
-    try:
-        cmd = [
-            "kubectl", "get", "stc", "-n", f"{namespace}",
-            "-o", "jsonpath={.items[0].status.version}"
-        ]
-        result = subprocess.run(cmd, capture_output=True, text=True, timeout=10)
-        version = result.stdout.strip()
-        if not version:
-            # Try alternate spec path if status not found
-            cmd_alt = [
-                "kubectl", "get", "stc", "-n", f"{namespace}",
-                "-o", "jsonpath={.items[0].spec.version}"
-            ]
-            result = subprocess.run(cmd_alt, capture_output=True, text=True, timeout=10)
-            version = result.stdout.strip()
-
-        if version:
-            if logger:
-                logger.info(f"Detected Portworx version from cluster: {version}")
-            return version
-        else:
-            if logger:
-                logger.warning("Unable to detect Portworx version — defaulting to 'unknown'")
-            return "unknown"
-
-    except Exception as e:
-        if logger:
-            logger.warning(f"Error detecting Portworx version: {e}")
-        return "unknown"
 
 def restart_vm(vm_name: str, namespace: str, logger: Optional[logging.Logger] = None) -> bool:
     """

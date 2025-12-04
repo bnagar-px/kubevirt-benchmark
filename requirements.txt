@@ -1,5 +1,5 @@
 # Python dependencies for KubeVirt Performance Testing Suite
-# Python 3.6+ required
+# Python 3.8+ required (hard requirement)
 
 # Core dependencies
 pandas~=2.3.3

@@ -31,26 +31,26 @@ console = Console()
 @click.option('--yes', '-y', is_flag=True, help='Skip confirmation prompts')
 @click.option('--save-results', is_flag=True, help='Save detailed results to results folder')
 @click.option('--results-folder', default='../results', help='Base directory to store test results')
-@click.option('--px-version', help='Portworx version (auto-detect if not provided)')
-@click.option('--px-namespace', default='portworx', help='Portworx namespace')
+@click.option('--storage-version', help='Storage version to include in results path (optional)')
+@click.option('--log-file', type=click.Path(), help='Log file path (auto-generated if not specified)')
 @click.pass_context
 def capacity_benchmark(ctx, **kwargs):
     """
     Run capacity benchmark
-    
+
     This workload tests cluster capacity by iteratively creating VMs until
     resource limits are reached or max iterations is hit.
-    
+
     \b
     Examples:
       # Run capacity test with 5 VMs per iteration
-      virtbench capacity-benchmark --storage-class fada-raw-sc --vms 5
-      
+      virtbench capacity-benchmark --storage-class YOUR-STORAGE-CLASS --vms 5
+
       # Run with custom max iterations
-      virtbench capacity-benchmark --storage-class fada-raw-sc --vms 5 --max-iterations 20
-      
+      virtbench capacity-benchmark --storage-class YOUR-STORAGE-CLASS --vms 5 --max-iterations 20
+
       # Run with cleanup after test
-      virtbench capacity-benchmark --storage-class fada-raw-sc --vms 5 --cleanup
+      virtbench capacity-benchmark --storage-class YOUR-STORAGE-CLASS --vms 5 --cleanup
     """
     print_banner("Capacity Benchmark")
     
@@ -93,10 +93,9 @@ def capacity_benchmark(ctx, **kwargs):
         'ssh-pod': kwargs['ssh_pod'],
         'ssh-pod-ns': kwargs['ssh_pod_ns'],
         'results-folder': kwargs['results_folder'],
-        'px-namespace': kwargs['px_namespace'],
-        'log-level': ctx.obj.log_level,
+        'log-level': ctx.obj.log_level.upper(),
     }
-    
+
     # Add boolean flags
     if kwargs['cleanup']:
         python_args['cleanup'] = True
@@ -104,13 +103,15 @@ def capacity_benchmark(ctx, **kwargs):
         python_args['yes'] = True
     if kwargs['save_results']:
         python_args['save-results'] = True
-    
+
     # Add optional args
-    if kwargs.get('px_version'):
-        python_args['px-version'] = kwargs['px_version']
+    if kwargs.get('storage_version'):
+        python_args['storage-version'] = kwargs['storage_version']
     
-    # Add global flags from context
-    if ctx.obj.log_file:
+    # Add log-file (prefer subcommand option, then global context, then auto-generate)
+    if kwargs.get('log_file'):
+        python_args['log-file'] = kwargs['log_file']
+    elif ctx.obj.log_file:
         python_args['log-file'] = ctx.obj.log_file
     else:
         python_args['log-file'] = generate_log_filename('capacity-benchmark')

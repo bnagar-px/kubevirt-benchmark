@@ -1,17 +1,44 @@
 # KubeVirt Performance Testing Suite
 
-A comprehensive performance testing toolkit for KubeVirt virtual machines running on OpenShift Container Platform (OCP) with Portworx storage.
+A comprehensive, vendor-neutral performance testing toolkit for KubeVirt virtual machines running on OpenShift Container Platform (OCP) or any Kubernetes distribution with KubeVirt.
+
+## Table of Contents
+
+- [Overview](#overview)
+- [Features](#features)
+- [Prerequisites](#prerequisites)
+- [Complete Setup Guide](#complete-setup-guide)
+  - [Option A: Using virtbench CLI (Recommended)](#option-a-using-virtbench-cli-recommended)
+  - [Option B: Using Python Scripts Directly](#option-b-using-python-scripts-directly)
+- [Testing Scenarios](#testing-scenarios)
+  - [Scenario 1: DataSource-Based VM Provisioning](#scenario-1-datasource-based-vm-provisioning)
+  - [Scenario 2: Single Node Boot Storm Testing](#scenario-2-single-node-boot-storm-testing)
+  - [Scenario 3: Multi-Node Boot Storm Testing](#scenario-3-multi-node-boot-storm-testing)
+  - [Scenario 4: Live Migration Testing](#scenario-4-live-migration-testing)
+  - [Scenario 5: Capacity Benchmark Testing](#scenario-5-capacity-benchmark-testing)
+  - [Scenario 6: Failure and Recovery Testing](#scenario-6-failure-and-recovery-testing)
+- [Boot Storm Testing Guide](#boot-storm-testing-guide)
+- [VM Template Guide](#vm-template-guide)
+- [Cluster Validation Guide](#cluster-validation-guide)
+- [Configuration Options](#configuration-options)
+- [Output and Results](#output-and-results)
+- [Results Dashboard](#results-dashboard)
+- [Cleanup Guide](#cleanup-guide)
+- [Troubleshooting](#troubleshooting)
+- [Best Practices](#best-practices)
+- [Repository Structure](#repository-structure)
+- [License](#license)
+
+---
 
 ## Overview
 
-This suite provides automated performance testing tools to measure and validate KubeVirt VM provisioning, boot times, network readiness, and failure recovery scenarios. It's designed for production environments running OpenShift Virtualization with Portworx as the storage backend.
-
+This suite provides automated performance testing tools to measure and validate KubeVirt VM provisioning, boot times, network readiness, and failure recovery scenarios. It's designed for production environments running OpenShift Virtualization or KubeVirt with any CSI-compatible storage backend.
 
 ## Features
 
-- **Unified CLI Interface**: Professional kubectl-like CLI with shell completion
+- **Unified CLI Interface**: Professional kubectl-like CLI (`virtbench`) with shell completion
 - **VM Creation Performance Testing**: Measure VM provisioning and boot times at scale
-- **Capacity Benchmark Testing**: Test cluster limits with 5-phase testing (create, resize, restart, snapshot, migrate)
 - **Boot Storm Testing**: Test VM startup performance when powering on multiple VMs simultaneously
 - **Live Migration Testing**: Measure VM live migration performance across different scenarios
 - **Capacity Benchmark Testing**: Test cluster capacity limits with comprehensive VM operations (create, resize, restart, snapshot, migrate)
@@ -22,7 +49,7 @@ This suite provides automated performance testing tools to measure and validate 
 - **Volume Resize Testing**: Test PVC expansion capabilities
 - **Parallel Execution**: Support for testing hundreds of VMs concurrently
 - **Parallel Namespace Creation**: Create namespaces in batches for faster test setup
-- **Multiple Storage Backends**: Support for both standard Portworx and Pure FlashArray Direct Access (FADA)
+- **Multiple Storage Backends**: Works with any CSI-compatible storage class (Portworx, Ceph, vSphere, AWS EBS, etc.)
 - **Comprehensive Logging**: Detailed logs with timestamps and error tracking
 - **Flexible Configuration**: Command-line arguments for easy customization
 - **Interactive Results Dashboard**: Auto-generate rich HTML dashboards for all test results
@@ -30,17 +57,18 @@ This suite provides automated performance testing tools to measure and validate 
 ## Prerequisites
 
 ### Software Requirements
-- OpenShift Container Platform 4.x with OpenShift Virtualization
-- Portworx Enterprise 2.x or later and PX-CSI installed
-- Python 3.6 or later
-- Go 1.21 or later (for building virtbench CLI)
+- OpenShift Container Platform 4.x with OpenShift Virtualization (or Kubernetes with KubeVirt)
+- Any CSI-compatible storage provider with a configured StorageClass
+- **Python 3.8 or higher** (required - scripts will exit if version is below 3.8)
 - kubectl CLI configured with cluster access
 - Bash shell (for helper scripts)
 
+> **⚠️ Important:** Python 3.8+ is a hard requirement. The scripts will check for this and exit with an error if Python version is below 3.8.
+
 ### Cluster Requirements
 - Sufficient cluster resources to run test VMs
-- Portworx storage classes configured
-- OpenShift Virtualization operator installed
+- At least one StorageClass configured (any CSI-compatible storage)
+- OpenShift Virtualization operator installed (or KubeVirt on vanilla Kubernetes)
 - Network connectivity between test pods and VMs
 
 ### Permissions
@@ -50,102 +78,315 @@ The user running these tests needs:
 - Ability to exec into pods (for ping tests)
 - Ability to patch VM resources (for FAR tests)
 
-## Repository Structure
+---
 
-```
-kubevirt-benchmark-suite/
-├── README.md                          # This file
-├── CLI_README.md                      # virtbench CLI documentation
-├── QUICKSTART.md                      # 5-minute quick start guide
-├── SETUP.md                           # Detailed setup instructions
-├── CLEANUP_GUIDE.md                   # Comprehensive cleanup guide
-├── CONTRIBUTING.md                    # Contribution guidelines
-├── LICENSE                            # Apache 2.0 License
-├── requirements.txt                   # Python dependencies
-├── go.mod                             # Go module file
-├── go.sum                             # Go dependencies
-├── Makefile                           # Build automation
-├── install.sh                         # Installation script
-│
-├── cmd/virtbench/                     # virtbench CLI source code
-│   ├── main.go                       # CLI entry point
-│   ├── root.go                       # Root command
-│   ├── common.go                     # Common utilities
-│   ├── datasource_clone.go           # DataSource clone subcommand
-│   ├── migration.go                  # Migration subcommand
-│   ├── capacity_benchmark.go         # Capacity benchmark subcommand
-│   ├── failure_recovery.go           # Failure recovery subcommand
-│   ├── validate_cluster.go           # Cluster validation subcommand
-│   ├── version.go                    # Version subcommand
-│   └── completion.go                 # Shell completion subcommand
-│
-├── bin/                               # Built binaries (generated)
-│   └── virtbench                     # virtbench CLI binary
-│
-├── dashboard/                        # Interactive dashboard for test results
-│   └── generate_dashboard.py         # Dashboard generation script
-│   
-├── datasource-clone/                 # DataSource-based VM provisioning tests
-│   └── measure-vm-creation-time.py   # Main test script
-│
-├── migration/                         # Live migration performance tests
-│   └── measure-vm-migration-time.py  # Main migration test script
-│
-├── capacity-benchmark/                # Capacity benchmark tests
-│   ├── measure-capacity.py           # Main capacity test script
-│   └── README.md                     # Capacity benchmark documentation
-│
-├── failure-recovery/                  # Failure and recovery tests
-│   ├── measure-recovery-time.py      # Recovery measurement script
-│   ├── run-far-test.sh               # FAR test orchestration
-│   ├── patch-vms.sh                  # VM patching helper
-│   └── far-template.yaml             # FAR configuration template
-│
-├── utils/                             # Shared utilities
-│   ├── common.py                     # Common functions and logging
-│   ├── validate_cluster.py           # Cluster validation script
-│   ├── apply_template.sh             # Template helper script
-│   └── README.md                     # Utils documentation
-│
-└── examples/                          # Example configurations
-    ├── storage-classes/              # Sample StorageClass definitions
-    │   └── portworx/                 # Portworx storage classes
-    │       ├── portworx-fada-sc.yaml # Pure FlashArray Direct Access SC
-    │       └── portworx-raw-sc.yaml  # Standard Portworx SC
-    ├── vm-templates/                 # VM template files
-    │   └── vm-template.yaml          # Templated VM configuration
-    ├── ssh-pod.yaml                  # SSH test pod for network tests
-    ├── sequential-migration.sh       # Sequential migration example
-    ├── parallel-migration.sh         # Parallel migration example
-    ├── evacuation-scenario.sh        # Node evacuation example
-    └── round-robin-migration.sh      # Round-robin migration example
-```
-## virtbench CLI
+## Complete Setup Guide
 
-This suite  includes **virtbench**, a unified command-line interface that provides a professional, kubectl-like experience for benchmarks.
+This section provides exhaustive step-by-step instructions to get you up and running. Follow these steps exactly and you'll be ready to run benchmarks.
+
+### Option A: Using virtbench CLI (Recommended)
+
+The `virtbench` CLI provides a unified, kubectl-like interface for all benchmarks. This is the recommended approach.
+
+#### Step 1: Verify Prerequisites
 
 ```bash
-# Install the CLI
+# 1.1 Check Python version (must be 3.8 or higher)
+python3 --version
+# Expected: Python 3.8.x or higher
+
+# 1.2 Check kubectl is configured and can access your cluster
+kubectl cluster-info
+# Expected: Kubernetes control plane is running at https://...
+
+# 1.3 Check OpenShift Virtualization is installed
+kubectl get kubevirt -A
+# Expected: NAMESPACE       NAME                               AGE   PHASE
+#           openshift-cnv   kubevirt-kubevirt-hyperconverged   ...   Deployed
+
+# 1.4 Check storage classes are available
+kubectl get storageclass
+# Expected: At least one storage class available
+```
+
+#### Step 2: Clone and Install
+
+```bash
+# 2.1 Clone the repository
 git clone https://github.com/your-org/kubevirt-benchmark-suite.git
 cd kubevirt-benchmark-suite
-pip3 install -r requirements.txt
+
+# 2.2 Run the installation script
 ./install.sh
+# This will:
+# - Check Python version (exits if < 3.8)
+# - Install Python dependencies
+# - Install virtbench CLI (Python-based)
 
-When using the `virtbench` CLI, the tool needs to locate the repository directory to access Python scripts and templates. The CLI automatically searches for the repository in the following order:
-Example:
+# 2.3 Verify virtbench is installed
+virtbench version
+# Expected: virtbench version X.Y.Z
 
-# Set the environment variable
-export VIRTBENCH_REPO=/path/to/kubevirt-benchmark-suite
-
-# Now you can run virtbench from anywhere
-cd /tmp
-virtbench capacity-benchmark --storage-class fada-raw-sc --vms 5
+# 2.4 (Optional) Enable shell completion
+# For bash:
+eval "$(_VIRTBENCH_COMPLETE=bash_source virtbench)"
+# For zsh:
+eval "$(_VIRTBENCH_COMPLETE=zsh_source virtbench)"
+# To make it permanent, add the above line to your ~/.bashrc or ~/.zshrc
 ```
+
+#### Step 3: Configure Environment Variable
+
+When using `virtbench` from any directory, it needs to locate the repository:
+
 ```bash
-# Add to ~/.bashrc or ~/.zshrc
+# 3.1 Set the environment variable (add to ~/.bashrc or ~/.zshrc for persistence)
 export VIRTBENCH_REPO=/path/to/kubevirt-benchmark-suite
+
+# 3.2 Verify it's set
+echo $VIRTBENCH_REPO
+# Expected: /path/to/kubevirt-benchmark-suite
+
+# 3.3 Add to shell profile for persistence
+echo 'export VIRTBENCH_REPO=/path/to/kubevirt-benchmark-suite' >> ~/.bashrc
+source ~/.bashrc
 ```
-See [CLI_README.md](CLI_README.md) for complete CLI documentation.
+
+#### Step 4: Identify Your Storage Class
+
+```bash
+# 4.1 List available storage classes
+kubectl get storageclass
+
+# 4.2 Note the name of your storage class
+# Examples: standard, gp2, ceph-rbd, vsphere-csi, ocs-storagecluster-ceph-rbd
+
+# 4.3 Verify the storage class is working
+kubectl get pvc -A | head -5
+```
+
+#### Step 5: Create SSH Pod for Network Tests
+
+The SSH pod is required for ping tests that validate VM network connectivity:
+
+```bash
+# 5.1 Create the SSH test pod
+kubectl apply -f examples/ssh-pod.yaml
+
+# 5.2 Wait for the pod to be ready
+kubectl wait --for=condition=Ready pod/ssh-test-pod -n default --timeout=300s
+
+# 5.3 Verify the pod is running
+kubectl get pod ssh-test-pod -n default
+# Expected: NAME           READY   STATUS    RESTARTS   AGE
+#           ssh-test-pod   1/1     Running   0          ...
+```
+
+#### Step 6: Verify DataSource Availability
+
+```bash
+# 6.1 Check available DataSources
+kubectl get datasource -n openshift-virtualization-os-images
+
+# 6.2 Verify the rhel9 DataSource exists (default for tests)
+kubectl get datasource rhel9 -n openshift-virtualization-os-images
+# Expected: NAME    AGE
+#           rhel9   ...
+```
+
+#### Step 7: Validate Your Cluster
+
+```bash
+# 7.1 Run cluster validation (replace YOUR-STORAGE-CLASS)
+virtbench validate-cluster --storage-class YOUR-STORAGE-CLASS
+
+# 7.2 For comprehensive validation
+virtbench validate-cluster --storage-class YOUR-STORAGE-CLASS --all
+
+# Expected output:
+# ✓ kubectl access and cluster connectivity
+# ✓ OpenShift Virtualization installed and healthy
+# ✓ Storage class available
+# ✓ Worker nodes ready
+# ✓ DataSource available
+# ✓ User permissions verified
+```
+
+#### Step 8: Run Your First Test
+
+```bash
+# 8.1 Run a small test to verify everything works
+virtbench datasource-clone \
+  --start 1 \
+  --end 3 \
+  --storage-class YOUR-STORAGE-CLASS \
+  --cleanup
+
+# Expected: Creates 3 VMs, measures performance, then cleans up
+
+# 8.2 View the results
+# Results are displayed in the console with timing metrics
+```
+
+#### Step 9: You're Ready!
+
+You can now run any benchmark. Here are some examples:
+
+```bash
+# DataSource clone test (VM creation)
+virtbench datasource-clone --start 1 --end 10 --storage-class YOUR-STORAGE-CLASS --save-results
+
+# Migration test
+virtbench migration --start 1 --end 5 --source-node WORKER-NODE-NAME --save-results
+
+# Capacity benchmark
+virtbench capacity-benchmark --storage-class YOUR-STORAGE-CLASS --vms 5 --max-iterations 3
+
+# Failure recovery test
+virtbench failure-recovery --start 1 --end 10 --node-name WORKER-NODE-NAME
+```
+
+---
+
+### Option B: Using Python Scripts Directly
+
+If you prefer not to use the virtbench CLI, you can run the Python scripts directly.
+
+#### Step 1: Verify Prerequisites
+
+```bash
+# 1.1 Check Python version (must be 3.8 or higher)
+python3 --version
+# Expected: Python 3.8.x or higher
+
+# 1.2 Check kubectl is configured
+kubectl cluster-info
+
+# 1.3 Check OpenShift Virtualization is installed
+kubectl get kubevirt -A
+
+# 1.4 Check storage classes are available
+kubectl get storageclass
+```
+
+#### Step 2: Clone and Install Dependencies
+
+```bash
+# 2.1 Clone the repository
+git clone https://github.com/your-org/kubevirt-benchmark-suite.git
+cd kubevirt-benchmark-suite
+
+# 2.2 Create a virtual environment (recommended)
+python3 -m venv venv
+source venv/bin/activate
+
+# 2.3 Install Python dependencies
+pip3 install -r requirements.txt
+
+# 2.4 Verify installation
+python3 -c "import kubernetes; print('kubernetes module OK')"
+python3 -c "import yaml; print('yaml module OK')"
+```
+
+#### Step 3: Identify Your Storage Class
+
+```bash
+# 3.1 List available storage classes
+kubectl get storageclass
+
+# 3.2 Note the name of your storage class (e.g., standard, gp2, ceph-rbd)
+```
+
+#### Step 4: Configure VM Templates (Optional)
+
+```bash
+# 4.1 Option A: Use the template helper script
+./utils/apply_template.sh \
+  --output /tmp/my-vm.yaml \
+  --vm-name my-test-vm \
+  --storage-class YOUR-STORAGE-CLASS \
+  --memory 4Gi \
+  --cpu-cores 2
+
+# 4.2 Option B: Replace storage class in all templates at once
+./utils/replace-storage-class.sh YOUR-STORAGE-CLASS
+
+# 4.3 Verify the replacement
+grep "storageClassName:" examples/vm-templates/*.yaml
+```
+
+#### Step 5: Create SSH Pod for Network Tests
+
+```bash
+# 5.1 Create the SSH test pod
+kubectl apply -f examples/ssh-pod.yaml
+
+# 5.2 Wait for the pod to be ready
+kubectl wait --for=condition=Ready pod/ssh-test-pod -n default --timeout=300s
+
+# 5.3 Verify the pod is running
+kubectl get pod ssh-test-pod -n default
+```
+
+#### Step 6: Verify DataSource Availability
+
+```bash
+# 6.1 Check available DataSources
+kubectl get datasource -n openshift-virtualization-os-images
+
+# 6.2 Verify the rhel9 DataSource exists
+kubectl get datasource rhel9 -n openshift-virtualization-os-images
+```
+
+#### Step 7: Validate Your Cluster
+
+```bash
+# 7.1 Run cluster validation
+python3 utils/validate_cluster.py --storage-class YOUR-STORAGE-CLASS
+
+# 7.2 For comprehensive validation
+python3 utils/validate_cluster.py --storage-class YOUR-STORAGE-CLASS --all
+```
+
+#### Step 8: Run Your First Test
+
+```bash
+# 8.1 Navigate to the test directory
+cd datasource-clone
+
+# 8.2 Run a small test
+python3 measure-vm-creation-time.py \
+  --start 1 \
+  --end 3 \
+  --vm-name rhel-9-vm \
+  --cleanup
+
+# 8.3 View the results in the console
+```
+
+#### Step 9: You're Ready!
+
+You can now run any benchmark script directly:
+
+```bash
+# DataSource clone test (VM creation)
+cd datasource-clone
+python3 measure-vm-creation-time.py --start 1 --end 10 --vm-name rhel-9-vm --save-results
+
+# Migration test
+cd migration
+python3 measure-vm-migration-time.py --start 1 --end 5 --source-node WORKER-NODE-NAME --save-results
+
+# Capacity benchmark
+cd capacity-benchmark
+python3 measure-capacity.py --storage-class YOUR-STORAGE-CLASS --vms 5 --max-iterations 3
+
+# Failure recovery test
+cd failure-recovery
+python3 measure-recovery-time.py --start 1 --end 10 --vm-name rhel-9-vm
+```
+
+---
 
 ## Important: Configure Your Storage Class
 
@@ -153,7 +394,7 @@ See [CLI_README.md](CLI_README.md) for complete CLI documentation.
 
 ### Quick Setup (Choose One):
 
-**Option 1: Use CLI flag**
+**Option 1: Use CLI flag (Recommended)**
 ```bash
 # Replace YOUR-STORAGE-CLASS with your actual storage class name
 virtbench datasource-clone --start 1 --end 10 --storage-class YOUR-STORAGE-CLASS
@@ -171,85 +412,21 @@ kubectl get storageclass
 grep "storageClassName:" examples/vm-templates/*.yaml
 ```
 
-
-## Quick Start
-
-### Option 1: Using virtbench CLI (Recommended)
-
-```bash
-# 1. Clone the repository
-git clone https://github.com/your-org/kubevirt-benchmark-suite.git
-cd kubevirt-benchmark-suite
-
-# 2. Install virtbench CLI
-./install.sh
-
-# 3. Create SSH pod for ping tests (required for network validation)
-kubectl apply -f examples/ssh-pod.yaml
-kubectl wait --for=condition=Ready pod/ssh-test-pod -n default --timeout=300s
-
-# 4. Validate your cluster
-virtbench validate-cluster --storage-class fada-raw-sc
-
-# 5. Run a benchmark
-virtbench capacity-benchmark --storage-class fada-raw-sc --vms 5 --max-iterations 3
-```
-
-See [CLI_README.md](CLI_README.md) for complete CLI documentation.
-
-### Option 2: Using Python Scripts Directly
-
-```bash
-# 1. Clone the repository
-git clone https://github.com/your-org/kubevirt-benchmark-suite.git
-cd kubevirt-benchmark-suite
-
-# 2. Install Python dependencies
-pip3 install -r requirements.txt
-
-# 3. Create SSH pod for ping tests (required for network validation)
-kubectl apply -f examples/ssh-pod.yaml
-kubectl wait --for=condition=Ready pod/ssh-test-pod -n default --timeout=300s
-
-# 3. Validate your cluster
-python3 utils/validate_cluster.py --storage-class portworx-fada-sc
-
-# 4. Configure VM templates (Optional) 
-./utils/apply_template.sh \
-  --output /tmp/my-vm.yaml \
-  --vm-name my-test-vm \
-  --storage-class portworx-fada-sc \
-  --memory 4Gi \
-  --cpu-cores 2
-
-# 5. Run a basic test
-cd datasource-clone
-python3 measure-vm-creation-time.py --start 1 --end 10 --vm-name rhel-9-vm --vm-template ../examples/vm-templates/rhel9-vm-datasource.yaml
-
-# Note: To use a different storage class, either:
-# 1. Use the CLI with --storage-class flag (recommended):
-#    virtbench datasource-clone --start 1 --end 10 --storage-class your-storage-class
-# 2. Or use the replacement script:
-#    ../utils/replace-storage-class.sh your-storage-class
-```
-
-See [TEMPLATE_GUIDE.md](TEMPLATE_GUIDE.md) for detailed template usage.
-
 ## Testing Scenarios
 
 ### Scenario 1: DataSource-Based VM Provisioning
 
-Tests VM creation using KubeVirt DataSource with Pure FlashArray Direct Access (FADA).
+Tests VM creation using KubeVirt DataSource cloning for efficient VM provisioning.
 
-**Use Case**: Optimal for Pure Storage FlashArray backends with direct volume access.
+**Use Case**: Measure VM provisioning performance with your storage backend.
 
 **Example (CLI)**:
 ```bash
-# Run performance test with custom storage class
+# Run performance test with your storage class
 virtbench datasource-clone \
   --start 1 \
   --end 100 \
-  --storage-class fada-raw-sc \
+  --storage-class YOUR-STORAGE-CLASS \
   --log-file results-$(date +%Y%m%d-%H%M%S).log
 ```
 
@@ -275,11 +452,11 @@ Tests VM startup performance on a single node when powering on multiple VMs simu
 
 **Example (virtbench CLI - Recommended)**:
 ```bash
-# Run test on a single node (auto-selected) with custom storage class
+# Run test on a single node (auto-selected) with your storage class
 virtbench datasource-clone \
   --start 1 \
   --end 50 \
-  --storage-class fada-raw-sc \
+  --storage-class YOUR-STORAGE-CLASS \
   --single-node \
   --boot-storm \
   --log-file single-node-boot-storm-$(date +%Y%m%d-%H%M%S).log
@@ -288,7 +465,7 @@ virtbench datasource-clone \
 virtbench datasource-clone \
   --start 1 \
   --end 50 \
-  --storage-class fada-raw-sc \
+  --storage-class YOUR-STORAGE-CLASS \
   --single-node \
   --node-name worker-node-1 \
   --boot-storm \
@@ -351,7 +528,7 @@ Tests VM startup performance across all nodes when powering on multiple VMs simu
 virtbench datasource-clone \
   --start 1 \
   --end 100 \
-  --storage-class fada-raw-sc \
+  --storage-class YOUR-STORAGE-CLASS \
   --boot-storm \
   --log-file boot-storm-$(date +%Y%m%d-%H%M%S).log
 ```
@@ -383,7 +560,20 @@ Tests VM live migration performance across different scenarios.
 
 **Use Case**: Validates migration performance for node maintenance, load balancing, and disaster recovery scenarios.
 
-**Example - Sequential Migration**:
+#### Sequential Migration
+
+**virtbench CLI:**
+```bash
+# Migrate 10 VMs one by one from worker-1 to worker-2
+virtbench migration \
+  --start 1 \
+  --end 10 \
+  --source-node worker-1 \
+  --target-node worker-2 \
+  --save-results
+```
+
+**Python script:**
 ```bash
 cd migration
 
@@ -396,8 +586,25 @@ python3 measure-vm-migration-time.py \
   --save-results
 ```
 
-**Example - Parallel Migration**:
+#### Parallel Migration
+
+**virtbench CLI:**
 ```bash
+# Migrate 50 VMs in parallel with 10 concurrent migrations
+virtbench migration \
+  --start 1 \
+  --end 50 \
+  --source-node worker-1 \
+  --target-node worker-2 \
+  --parallel \
+  --concurrency 10 \
+  --save-results
+```
+
+**Python script:**
+```bash
+cd migration
+
 # Migrate 50 VMs in parallel with 10 concurrent migrations
 python3 measure-vm-migration-time.py \
   --start 1 \
@@ -409,8 +616,26 @@ python3 measure-vm-migration-time.py \
   --save-results
 ```
 
-**Example - Parallel Migration with Advanced Options**:
+#### Parallel Migration with Advanced Options
+
+**virtbench CLI:**
 ```bash
+# High-scale parallel migration with interleaved scheduling and custom timeout
+virtbench migration \
+  --start 1 \
+  --end 200 \
+  --parallel \
+  --concurrency 50 \
+  --skip-ping \
+  --save-results \
+  --migration-timeout 1000 \
+  --interleaved-scheduling
+```
+
+**Python script:**
+```bash
+cd migration
+
 # High-scale parallel migration with interleaved scheduling and custom timeout
 python3 measure-vm-migration-time.py \
   --start 1 \
@@ -420,12 +645,27 @@ python3 measure-vm-migration-time.py \
   --skip-ping \
   --save-results \
   --migration-timeout 1000 \
-  --px-version 3.5.0-run2-optimized \
   --interleaved-scheduling
 ```
 
-**Example - Node Evacuation (Specific Node)**:
+#### Node Evacuation (Specific Node)
+
+**virtbench CLI:**
 ```bash
+# Evacuate all VMs from worker-3 before maintenance
+virtbench migration \
+  --start 1 \
+  --end 100 \
+  --source-node worker-3 \
+  --evacuate \
+  --concurrency 20 \
+  --save-results
+```
+
+**Python script:**
+```bash
+cd migration
+
 # Evacuate all VMs from worker-3 before maintenance
 python3 measure-vm-migration-time.py \
   --start 1 \
@@ -436,8 +676,24 @@ python3 measure-vm-migration-time.py \
   --save-results
 ```
 
-**Example - Node Evacuation (Auto-Select Busiest)**:
+#### Node Evacuation (Auto-Select Busiest)
+
+**virtbench CLI:**
 ```bash
+# Automatically find and evacuate the busiest node
+virtbench migration \
+  --start 1 \
+  --end 100 \
+  --evacuate \
+  --auto-select-busiest \
+  --concurrency 20 \
+  --save-results
+```
+
+**Python script:**
+```bash
+cd migration
+
 # Automatically find and evacuate the busiest node
 python3 measure-vm-migration-time.py \
   --start 1 \
@@ -448,8 +704,23 @@ python3 measure-vm-migration-time.py \
   --save-results
 ```
 
-**Example - Round-Robin Migration**:
+#### Round-Robin Migration
+
+**virtbench CLI:**
 ```bash
+# Distribute VMs across all nodes for load balancing
+virtbench migration \
+  --start 1 \
+  --end 100 \
+  --round-robin \
+  --concurrency 20 \
+  --save-results
+```
+
+**Python script:**
+```bash
+cd migration
+
 # Distribute VMs across all nodes for load balancing
 python3 measure-vm-migration-time.py \
   --start 1 \
@@ -469,8 +740,21 @@ python3 measure-vm-migration-time.py \
 
 **See example scripts**: `examples/sequential-migration.sh`, `examples/parallel-migration.sh`, `examples/evacuation-scenario.sh`, `examples/round-robin-migration.sh`
 
-**Cleanup after migration tests**:
+**Cleanup after migration tests:**
+
+**virtbench CLI:**
 ```bash
+# Clean up VMIMs only (VMs remain)
+virtbench migration --start 1 --end 100 --cleanup
+
+# Clean up everything if VMs were created by the test
+virtbench migration --start 1 --end 100 --create-vms --cleanup
+```
+
+**Python script:**
+```bash
+cd migration
+
 # Clean up VMIMs only (VMs remain)
 python3 measure-vm-migration-time.py --start 1 --end 100 --cleanup
 
@@ -486,25 +770,63 @@ Tests cluster capacity limits by running comprehensive VM operations in a loop u
 
 **Use Case**: Discover maximum VM capacity, test volume expansion limits, validate snapshot functionality, and stress-test the cluster.
 
-**Example - Basic Capacity Test**:
+#### Basic Capacity Test
+
+**virtbench CLI:**
+```bash
+# Run capacity test with default settings (5 VMs per iteration)
+virtbench capacity-benchmark --storage-class YOUR-STORAGE-CLASS
+
+# Run with custom VM count
+virtbench capacity-benchmark --storage-class YOUR-STORAGE-CLASS --vms 10
+
+# Run with maximum iterations limit
+virtbench capacity-benchmark --storage-class YOUR-STORAGE-CLASS --max-iterations 5
+```
+
+**Python script:**
 ```bash
 cd capacity-benchmark
 
 # Run capacity test with default settings (5 VMs per iteration)
-python3 measure-capacity.py --storage-class portworx-fada-sc
+python3 measure-capacity.py --storage-class YOUR-STORAGE-CLASS
 
 # Run with custom VM count
-python3 measure-capacity.py --storage-class portworx-fada-sc --vms 10
+python3 measure-capacity.py --storage-class YOUR-STORAGE-CLASS --vms 10
 
 # Run with maximum iterations limit
-python3 measure-capacity.py --storage-class portworx-fada-sc --max-iterations 5
+python3 measure-capacity.py --storage-class YOUR-STORAGE-CLASS --max-iterations 5
 ```
 
-**Example - Skip Specific Phases**:
+#### Skip Specific Phases
+
+**virtbench CLI:**
 ```bash
 # Test only VM creation capacity (skip resize, restart, snapshot, migration)
+virtbench capacity-benchmark \
+  --storage-class YOUR-STORAGE-CLASS \
+  --vms 10 \
+  --skip-resize-job \
+  --skip-restart-job \
+  --skip-snapshot-job \
+  --skip-migration-job
+
+# Test volume expansion limits
+virtbench capacity-benchmark \
+  --storage-class YOUR-STORAGE-CLASS \
+  --vms 5 \
+  --min-vol-size 30Gi \
+  --min-vol-inc-size 20Gi \
+  --max-iterations 10
+```
+
+**Python script:**
+```bash
+cd capacity-benchmark
+
+# Test only VM creation capacity (skip resize, restart, snapshot, migration)
 python3 measure-capacity.py \
-  --storage-class portworx-fada-sc \
+  --storage-class YOUR-STORAGE-CLASS \
   --vms 10 \
   --skip-resize-job \
   --skip-restart-job \
@@ -513,7 +835,7 @@ python3 measure-capacity.py \
 
 # Test volume expansion limits
 python3 measure-capacity.py \
-  --storage-class portworx-fada-sc \
+  --storage-class YOUR-STORAGE-CLASS \
   --vms 5 \
   --min-vol-size 30Gi \
   --min-vol-inc-size 20Gi \
@@ -528,13 +850,19 @@ python3 measure-capacity.py \
 5. **Phase 5**: Migrates VMs (tests live migration)
 6. Repeats until failure or max iterations reached
 
-**Cleanup**:
+**Cleanup:**
+
+**virtbench CLI:**
 ```bash
 # Cleanup resources after test
-python3 measure-capacity.py --cleanup-only
+virtbench capacity-benchmark --cleanup-only
 ```
 
-**See detailed documentation**: `capacity-benchmark/README.md`
+**Python script:**
+```bash
+cd capacity-benchmark
+python3 measure-capacity.py --cleanup-only
+```
 
 ---
 
@@ -544,20 +872,397 @@ Tests VM recovery time after simulated node failures using Fence Agents Remediat
 
 **Use Case**: Validates high availability and disaster recovery capabilities.
 
-**Example**:
+**virtbench CLI:**
+```bash
+# Run failure recovery test
+virtbench failure-recovery \
+  --start 1 \
+  --end 60 \
+  --node-name worker-node-1 \
+  --vm-name rhel-9-vm \
+  --save-results
+
+# With custom FAR configuration
+virtbench failure-recovery \
+  --start 1 \
+  --end 60 \
+  --node-name worker-node-1 \
+  --vm-name rhel-9-vm \
+  --far-name my-far-resource \
+  --save-results
+```
+
+**Python script:**
 ```bash
 cd failure-recovery
 
 # Edit far-template.yaml with your node details
 vim far-template.yaml
 
-# Run the complete FAR test
+# Run the complete FAR test using the shell script
 ./run-far-test.sh \
   --start 1 \
   --end 60 \
   --node-name worker-node-1 \
   --vm-name rhel-9-vm
+
+# Or run the Python script directly
+python3 measure-recovery-time.py \
+  --start 1 \
+  --end 60 \
+  --vm-name rhel-9-vm \
+  --save-results
 ```
+
+**Cleanup:**
+
+**virtbench CLI:**
+```bash
+# Clean up FAR resources
+virtbench failure-recovery \
+  --start 1 \
+  --end 60 \
+  --vm-name rhel-9-vm \
+  --cleanup \
+  --far-name my-far-resource \
+  --failed-node worker-node-1
+```
+
+**Python script:**
+```bash
+cd failure-recovery
+python3 measure-recovery-time.py \
+  --start 1 \
+  --end 60 \
+  --vm-name rhel-9-vm \
+  --cleanup \
+  --far-name my-far-resource \
+  --failed-node worker-node-1
+```
+
+---
+
+## Boot Storm Testing Guide
+
+### What is Boot Storm Testing?
+
+A "boot storm" occurs when many VMs start simultaneously, creating high demand on:
+- Storage I/O (reading boot images)
+- Network resources (DHCP, DNS requests)
+- Compute resources (CPU, memory allocation)
+- Hypervisor scheduling
+
+This test helps you understand:
+1. How your infrastructure handles concurrent VM startups
+2. Performance degradation under load
+3. Bottlenecks in storage, network, or compute
+4. Realistic recovery time objectives (RTO)
+
+### How It Works
+
+The boot storm test follows this workflow:
+
+**Phase 1: Initial VM Creation**
+1. Creates all test namespaces in parallel batches
+2. Creates and starts all VMs simultaneously
+3. Measures time to Running state
+4. Measures time to network readiness (ping)
+5. Displays initial creation performance results
+
+**Phase 2: Shutdown All VMs**
+1. Issues stop commands to all VMs in parallel
+2. Waits for all VMIs to be deleted (VMs fully stopped)
+3. Confirms all VMs are in stopped state
+
+**Phase 3: Boot Storm (Simultaneous Startup)**
+1. Issues start commands to ALL VMs at once
+2. Creates maximum load on infrastructure
+3. Measures time to Running state for each VM
+4. Measures time to network readiness for each VM
+5. Displays boot storm performance results
+
+**Phase 4: Comparison**
+Compare initial creation vs boot storm metrics to understand:
+- Performance differences between cold start and warm start
+- Impact of concurrent operations
+- Storage backend behavior under load
+
+### Boot Storm Examples
+
+**virtbench CLI:**
+```bash
+# Basic boot storm test (multi-node)
+virtbench datasource-clone \
+  --start 1 \
+  --end 50 \
+  --storage-class YOUR-STORAGE-CLASS \
+  --boot-storm \
+  --save-results
+
+# Single node boot storm test
+virtbench datasource-clone \
+  --start 1 \
+  --end 50 \
+  --storage-class YOUR-STORAGE-CLASS \
+  --single-node \
+  --boot-storm \
+  --save-results
+
+# Advanced boot storm test
+virtbench datasource-clone \
+  --start 1 \
+  --end 100 \
+  --storage-class YOUR-STORAGE-CLASS \
+  --namespace-prefix boot-storm-test \
+  --namespace-batch-size 30 \
+  --boot-storm \
+  --concurrency 100 \
+  --save-results \
+  --log-file boot-storm-$(date +%Y%m%d-%H%M%S).log
+```
+
+**Python script:**
+```bash
+cd datasource-clone
+
+# Basic boot storm test (multi-node)
+python3 measure-vm-creation-time.py \
+  --start 1 \
+  --end 50 \
+  --vm-name rhel-9-vm \
+  --boot-storm \
+  --save-results
+
+# Single node boot storm test
+python3 measure-vm-creation-time.py \
+  --start 1 \
+  --end 50 \
+  --vm-name rhel-9-vm \
+  --single-node \
+  --boot-storm \
+  --save-results
+
+# Advanced boot storm test
+python3 measure-vm-creation-time.py \
+  --start 1 \
+  --end 100 \
+  --vm-name rhel-9-vm \
+  --namespace-prefix boot-storm-test \
+  --namespace-batch-size 30 \
+  --boot-storm \
+  --concurrency 100 \
+  --save-results \
+  --log-file boot-storm-$(date +%Y%m%d-%H%M%S).log
+```
+
+### Interpreting Boot Storm Results
+
+**Key Metrics:**
+- **Time to Running**: How long until VM reaches Running state
+- **Time to Ping**: How long until VM is network-reachable
+- **Max Times**: Worst-case performance
+
+**What to Look For:**
+
+| Performance Level | Boot Storm vs Initial | Recommendation |
+|-------------------|----------------------|----------------|
+| Good | 1.5-2x slower | Infrastructure handles load well |
+| Concerning | 3x slower | Investigate bottlenecks |
+| Critical | 5x+ slower | Major infrastructure issues |
+
+### Performance Tuning
+
+If boot storm performance is poor:
+
+1. **Storage Bottleneck**: Increase storage IOPS, use faster storage tier, enable caching
+2. **Network Bottleneck**: Check DHCP server capacity, verify network bandwidth
+3. **Compute Bottleneck**: Add more worker nodes, increase node resources
+4. **Hypervisor Bottleneck**: Tune KubeVirt settings, adjust virt-launcher resources
+
+---
+
+## VM Template Guide
+
+### Overview
+
+The VM templates use placeholder variables (e.g., `{{VM_NAME}}`, `{{STORAGE_CLASS_NAME}}`) that can be replaced with actual values before deployment.
+
+### Template Variables
+
+| Variable | Description | Example Values |
+|----------|-------------|----------------|
+| `{{VM_NAME}}` | VM name | `rhel-9-vm`, `my-test-vm` |
+| `{{STORAGE_CLASS_NAME}}` | Storage class name | `standard`, `gp2`, `ceph-rbd` |
+| `{{DATASOURCE_NAME}}` | DataSource name | `rhel9`, `fedora`, `centos` |
+| `{{DATASOURCE_NAMESPACE}}` | DataSource namespace | `openshift-virtualization-os-images` |
+| `{{STORAGE_SIZE}}` | Root disk storage size | `30Gi`, `50Gi`, `100Gi` |
+| `{{VM_MEMORY}}` | VM memory allocation | `2048M`, `4Gi`, `8Gi` |
+| `{{VM_CPU_CORES}}` | Number of CPU cores | `1`, `2`, `4`, `8` |
+
+### Using the Helper Script (Recommended)
+
+```bash
+cd utils
+
+# Basic usage
+./apply_template.sh \
+  --output /tmp/my-vm.yaml \
+  --vm-name my-test-vm \
+  --storage-class YOUR-STORAGE-CLASS
+
+# Fully customized VM
+./apply_template.sh \
+  --output /tmp/custom-vm.yaml \
+  --vm-name high-performance-vm \
+  --storage-class YOUR-STORAGE-CLASS \
+  --datasource fedora \
+  --storage-size 100Gi \
+  --memory 8Gi \
+  --cpu-cores 4
+
+# Generate and apply in one command
+./apply_template.sh \
+  --output /tmp/vm.yaml \
+  --vm-name test-vm \
+  --storage-class YOUR-STORAGE-CLASS && \
+kubectl apply -f /tmp/vm.yaml -n test-namespace
+```
+
+### Helper Script Options
+
+| Option | Description | Default |
+|--------|-------------|---------|
+| `-t, --template FILE` | Template file path | ../examples/vm-templates/vm-template.yaml |
+| `-o, --output FILE` | Output file path | (required) |
+| `-n, --vm-name NAME` | VM name | rhel-9-vm |
+| `-s, --storage-class NAME` | Storage class name | (required) |
+| `-d, --datasource NAME` | DataSource name | rhel9 |
+| `--datasource-namespace NS` | DataSource namespace | openshift-virtualization-os-images |
+| `--storage-size SIZE` | Storage size | 30Gi |
+| `--memory SIZE` | VM memory | 2048M |
+| `--cpu-cores NUM` | Number of CPU cores | 1 |
+
+### Common Use Cases
+
+```bash
+# Testing different storage classes
+./apply_template.sh -o /tmp/vm-sc1.yaml -n test-vm -s storage-class-1
+./apply_template.sh -o /tmp/vm-sc2.yaml -n test-vm -s storage-class-2
+
+# Creating VMs with different sizes
+./apply_template.sh -o /tmp/vm-small.yaml -n small-vm -s YOUR-STORAGE-CLASS --storage-size 20Gi --memory 1Gi --cpu-cores 1
+./apply_template.sh -o /tmp/vm-large.yaml -n large-vm -s YOUR-STORAGE-CLASS --storage-size 100Gi --memory 8Gi --cpu-cores 4
+
+# Testing different OS images
+./apply_template.sh -o /tmp/vm-rhel9.yaml -n rhel9-vm -s YOUR-STORAGE-CLASS -d rhel9
+./apply_template.sh -o /tmp/vm-fedora.yaml -n fedora-vm -s YOUR-STORAGE-CLASS -d fedora
+```
+
+---
+
+## Cluster Validation Guide
+
+### Overview
+
+The cluster validation script checks that your OpenShift cluster is properly configured and ready to run KubeVirt performance tests.
+
+### Validation Checks
+
+The script validates:
+- ✓ kubectl access and cluster connectivity
+- ✓ OpenShift Virtualization installation and health
+  - KubeVirt resource status (Deployed phase)
+  - Critical deployments: virt-api, virt-controller, virt-operator
+  - virt-handler daemonset on all nodes
+- ✓ Storage class availability
+- ✓ Worker node readiness
+- ✓ DataSource availability
+- ✓ User permissions
+- ✓ Node resource utilization
+
+### Running Validation
+
+**virtbench CLI:**
+```bash
+# Basic validation
+virtbench validate-cluster --storage-class YOUR-STORAGE-CLASS
+
+# Comprehensive validation
+virtbench validate-cluster --storage-class YOUR-STORAGE-CLASS --all
+
+# With custom DataSource
+virtbench validate-cluster \
+  --storage-class YOUR-STORAGE-CLASS \
+  --datasource fedora \
+  --datasource-namespace openshift-virtualization-os-images
+
+# Require minimum worker nodes
+virtbench validate-cluster \
+  --storage-class YOUR-STORAGE-CLASS \
+  --min-worker-nodes 5
+```
+
+**Python script:**
+```bash
+cd utils
+
+# Basic validation
+python3 validate_cluster.py --storage-class YOUR-STORAGE-CLASS
+
+# Comprehensive validation
+python3 validate_cluster.py --all --storage-class YOUR-STORAGE-CLASS
+
+# With custom DataSource
+python3 validate_cluster.py \
+  --storage-class YOUR-STORAGE-CLASS \
+  --datasource fedora \
+  --datasource-namespace openshift-virtualization-os-images
+```
+
+### Validation Options
+
+| Option | Description | Default |
+|--------|-------------|---------|
+| `--storage-class NAME` | Storage class name to validate | (required) |
+| `--datasource NAME` | DataSource name to validate | rhel9 |
+| `--datasource-namespace NS` | DataSource namespace | openshift-virtualization-os-images |
+| `--min-worker-nodes NUM` | Minimum worker nodes required | 1 |
+| `--all` | Run all validation checks | false |
+| `--log-level LEVEL` | Logging level | INFO |
+
+### Exit Codes
+
+- `0` - All checks passed, cluster is ready
+- `1` - One or more checks failed, cluster not ready
+
+### Troubleshooting Validation Failures
+
+**OpenShift Virtualization Not Found:**
+```bash
+# Check if KubeVirt resource exists
+kubectl get kubevirt -A
+# Expected: NAMESPACE openshift-cnv, PHASE Deployed
+```
+
+**Components Not Ready:**
+```bash
+# Check deployment status
+kubectl get deployment -n openshift-cnv | grep -E "virt-api|virt-controller|virt-operator"
+
+# Check pod logs for errors
+kubectl logs -n openshift-cnv deployment/virt-api
+```
+
+**Storage Class Not Found:**
+```bash
+# List all storage classes
+kubectl get storageclass
+
+# Create a storage class appropriate for your storage backend
+# Refer to your storage provider's documentation
+```
+
+---
 
 ## Configuration Options
 
@@ -586,8 +1291,7 @@ vim far-template.yaml
 | `--yes`                  | Skip confirmation prompt for cleanup                                                   | false              |
 | `--save_results`         | Save detailed results (JSON and CSV) inside a timestamped folder under results/ folder | false              |
 | `--results_folder`       | Base directory to store test results                                                   | ../results         |
-| `--px_version`           | Portworx version to include in results path (auto-detect if not provided)              | auto-detect        |
-| `--px_namespace`         | Default namespace where Portworx is installed                                          | Portworx           |
+| `--storage-version`      | Storage version to include in results path (optional)                                  | -                  |
 
 ### Live Migration Tests
 
@@ -622,8 +1326,7 @@ vim far-template.yaml
 | `--yes` | Skip confirmation prompt for cleanup | false |
 | `--skip-checks` | Skip VM verifications before migration | false |
 | `--save-results` | Save detailed migration results (JSON and CSV) under results/ | false |
-| `--px-version` | Portworx version to include in results path (auto-detect if not provided) | auto-detect |
-| `--px-namespace` | Namespace where Portworx is installed | portworx |
+| `--storage-version` | Storage version to include in results path (optional) | - |
 | `--results-folder` | Base directory to store test results | ../results |
 
 ### Recovery Tests
@@ -693,7 +1396,7 @@ Detailed logs are saved to the specified log file with:
 ### Common Issues
 
 **Issue**: VMs fail to reach Running state
-- Check Portworx storage class is available: `kubectl get sc`
+- Check storage class is available: `kubectl get sc`
 - Verify sufficient cluster resources: `kubectl top nodes`
 - Check VM events: `kubectl describe vm <vm-name> -n <namespace>`
 
@@ -755,59 +1458,91 @@ python3 dashboard/generate_dashboard.py \
 
 > **For detailed dashboard documentation, see [dashboard/README.md](dashboard/README.md)**
 
-## Utility Tools
+---
 
-### Cluster Validation
+## Cleanup Guide
 
-Validate your cluster before running benchmarks:
+All test scripts support comprehensive cleanup with multiple options for different scenarios.
 
-```bash
-# Basic validation
-python3 utils/validate_cluster.py --storage-class portworx-fada-sc
+### Cleanup Options
 
-# Comprehensive validation
-python3 utils/validate_cluster.py --all --storage-class portworx-fada-sc
-```
+| Option | Description |
+|--------|-------------|
+| `--cleanup` | Delete resources and namespaces after test completes |
+| `--cleanup-on-failure` | Clean up resources even if tests fail |
+| `--dry-run-cleanup` | Show what would be deleted without actually deleting |
+| `--yes` | Skip confirmation prompt for cleanup |
 
-See [VALIDATION_GUIDE.md](VALIDATION_GUIDE.md) for details.
+### What Gets Cleaned Up
 
-### Template Management
-
-Apply template variables to VM configurations:
-
-```bash
-# Basic usage
-./utils/apply_template.sh -o /tmp/vm.yaml -n my-vm -s portworx-fada-sc
-
-# Full customization
-./utils/apply_template.sh \
-  -o /tmp/custom-vm.yaml \
-  -n high-perf-vm \
-  -s portworx-raw-sc \
-  --storage-size 100Gi \
-  --memory 8Gi \
-  --cpu-cores 4
-```
-
-See [TEMPLATE_GUIDE.md](TEMPLATE_GUIDE.md) for details.
-
-
-## Cleanup
-
-### Automatic Cleanup
-
-All test scripts support comprehensive cleanup with the following options:
-
-**What gets cleaned up:**
+**VM Creation Tests:**
 - All VMs created during the test
 - All DataVolumes (DVs) associated with the VMs
 - All PersistentVolumeClaims (PVCs)
 - All test namespaces (kubevirt-perf-test-1 through kubevirt-perf-test-N)
 
-#### Migration Tests
+**Migration Tests:**
+- VirtualMachineInstanceMigration (VMIM) resources
+- Optionally: VMs, DataVolumes, PVCs, and namespaces (if `--create-vms` was used)
+
+**Failure Recovery Tests:**
+- FenceAgentsRemediation (FAR) custom resources
+- FAR annotations from VMs
+- Uncordon nodes that were marked as failed
+- Optionally: VMs, DataVolumes, PVCs, and namespaces (with `--cleanup-vms`)
+
+### Cleanup Examples
+
+#### VM Creation Tests
+
+**virtbench CLI:**
 ```bash
-# Clean up VMIMs and optionally VMs/namespaces
+# Clean up after test
+virtbench datasource-clone --start 1 --end 50 --storage-class YOUR-STORAGE-CLASS --cleanup
+
+# Dry run to see what would be deleted
+virtbench datasource-clone --start 1 --end 50 --storage-class YOUR-STORAGE-CLASS --dry-run-cleanup
+
+# Clean up even if tests fail
+virtbench datasource-clone --start 1 --end 50 --storage-class YOUR-STORAGE-CLASS --cleanup-on-failure
+
+# Skip confirmation prompt
+virtbench datasource-clone --start 1 --end 50 --storage-class YOUR-STORAGE-CLASS --cleanup --yes
+```
+
+**Python script:**
+```bash
+cd datasource-clone
+
+# Clean up after test
+python3 measure-vm-creation-time.py --start 1 --end 50 --vm-name rhel-9-vm --cleanup
+
+# Dry run to see what would be deleted
+python3 measure-vm-creation-time.py --start 1 --end 50 --vm-name rhel-9-vm --dry-run-cleanup
+```
+
+#### Migration Tests
+
+**virtbench CLI:**
+```bash
+# Clean up VMIMs only (VMs remain)
+virtbench migration --start 1 --end 50 --cleanup
+
+# Clean up everything if VMs were created by the test
+virtbench migration --start 1 --end 50 --create-vms --cleanup
+
+# Dry run to see what would be deleted
+virtbench migration --start 1 --end 50 --dry-run-cleanup
+```
+
+**Python script:**
+```bash
 cd migration
+
+# Clean up VMIMs only (VMs remain)
+python3 measure-vm-migration-time.py --start 1 --end 50 --cleanup
+
+# Clean up everything if VMs were created by the test
 python3 measure-vm-migration-time.py --start 1 --end 50 --create-vms --cleanup
 
 # Dry run to see what would be deleted
@@ -815,9 +1550,32 @@ python3 measure-vm-migration-time.py --start 1 --end 50 --dry-run-cleanup
 ```
 
 #### Failure Recovery Tests
+
+**virtbench CLI:**
 ```bash
 # Clean up FAR resources and annotations
+virtbench failure-recovery \
+  --start 1 --end 60 \
+  --vm-name rhel-9-vm \
+  --cleanup \
+  --far-name my-far-resource \
+  --failed-node worker-1
+
+# Also delete VMs and namespaces
+virtbench failure-recovery \
+  --start 1 --end 60 \
+  --vm-name rhel-9-vm \
+  --cleanup \
+  --cleanup-vms \
+  --far-name my-far-resource \
+  --failed-node worker-1
+```
+
+**Python script:**
+```bash
 cd failure-recovery
+
+# Clean up FAR resources and annotations
 python3 measure-recovery-time.py \
   --start 1 --end 60 \
   --vm-name rhel-9-vm \
@@ -835,12 +1593,43 @@ python3 measure-recovery-time.py \
   --failed-node worker-1
 ```
 
-**What gets cleaned up:**
-- FenceAgentsRemediation (FAR) custom resources
-- FAR annotations from VMs
-- Uncordon nodes that were marked as failed
-- Optionally: VMs, DataVolumes, PVCs, and namespaces (with `--cleanup-vms`)
+#### Capacity Benchmark Tests
 
+**virtbench CLI:**
+```bash
+# Cleanup resources after test
+virtbench capacity-benchmark --cleanup-only
+```
+
+**Python script:**
+```bash
+cd capacity-benchmark
+python3 measure-capacity.py --cleanup-only
+```
+
+### Manual Cleanup
+
+If automatic cleanup fails or you need to clean up manually:
+
+```bash
+# Delete all test namespaces matching the prefix
+for ns in $(kubectl get ns -o name | grep kubevirt-perf-test); do
+  kubectl delete $ns &
+done
+wait
+
+# Delete specific namespace range
+for i in {1..50}; do
+  kubectl delete namespace kubevirt-perf-test-$i --ignore-not-found &
+done
+wait
+
+# Delete VMIMs in all namespaces
+kubectl delete vmim --all -A
+
+# Delete stuck VMs
+kubectl get vm -A -o name | xargs -I {} kubectl delete {} --force --grace-period=0
+```
 
 ### Safety Features
 
@@ -868,24 +1657,122 @@ CLEANUP SUMMARY
   Errors:                      0
 ================================================================================
 ```
-> **For comprehensive cleanup documentation, see [CLEANUP_GUIDE.md](CLEANUP_GUIDE.md)**
 
+
+---
+
+## Repository Structure
+
+```
+kubevirt-benchmark-suite/
+├── README.md                          # This comprehensive documentation
+├── LICENSE                            # Apache 2.0 License
+├── requirements.txt                   # Python dependencies
+├── setup.py                           # Python package setup
+├── install.sh                         # Installation script
+│
+├── virtbench/                         # virtbench CLI (Python-based)
+│   ├── __init__.py                   # Package initialization
+│   ├── cli.py                        # Click-based CLI entry point
+│   ├── common.py                     # Common utilities
+│   ├── commands/                     # Subcommand implementations
+│   │   ├── datasource_clone.py       # DataSource clone subcommand
+│   │   ├── migration.py              # Migration subcommand
+│   │   ├── capacity.py               # Capacity benchmark subcommand
+│   │   ├── failure_recovery.py       # Failure recovery subcommand
+│   │   ├── validate.py               # Cluster validation subcommand
+│   │   └── version.py                # Version subcommand
+│   └── utils/                        # CLI utilities
+│       └── yaml_modifier.py          # YAML modification helpers
+│
+├── dashboard/                        # Interactive dashboard for test results
+│   └── generate_dashboard.py         # Dashboard generation script
+│
+├── datasource-clone/                 # DataSource-based VM provisioning tests
+│   └── measure-vm-creation-time.py   # Main test script
+│
+├── migration/                         # Live migration performance tests
+│   └── measure-vm-migration-time.py  # Main migration test script
+│
+├── capacity-benchmark/                # Capacity benchmark tests
+│   ├── measure-capacity.py           # Main capacity test script
+│   └── README.md                     # Capacity benchmark documentation
+│
+├── failure-recovery/                  # Failure and recovery tests
+│   ├── measure-recovery-time.py      # Recovery measurement script
+│   ├── run-far-test.sh               # FAR test orchestration
+│   ├── patch-vms.sh                  # VM patching helper
+│   └── far-template.yaml             # FAR configuration template
+│
+├── utils/                             # Shared utilities
+│   ├── common.py                     # Common functions and logging
+│   ├── validate_cluster.py           # Cluster validation script
+│   ├── apply_template.sh             # Template helper script
+│   └── replace-storage-class.sh      # Storage class replacement script
+│
+└── examples/                          # Example configurations
+    ├── storage-classes/              # Sample StorageClass definitions (vendor-specific)
+    ├── vm-templates/                 # VM template files
+    │   └── vm-template.yaml          # Templated VM configuration
+    ├── ssh-pod.yaml                  # SSH test pod for network tests
+    ├── sequential-migration.sh       # Sequential migration example
+    ├── parallel-migration.sh         # Parallel migration example
+    ├── evacuation-scenario.sh        # Node evacuation example
+    └── round-robin-migration.sh      # Round-robin migration example
+```
+
+---
 
 ## Best Practices
 
 1. **Validate First**: Always run cluster validation before benchmarks
+   ```bash
+   virtbench validate-cluster --storage-class YOUR-STORAGE-CLASS --all
+   ```
+
 2. **Use Templates**: Use the template helper script for consistent VM configurations
+   ```bash
+   ./utils/apply_template.sh -o /tmp/vm.yaml -n my-vm -s YOUR-STORAGE-CLASS
+   ```
+
 3. **Start Small**: Begin with 5-10 VMs to validate your setup before scaling
+   ```bash
+   virtbench datasource-clone --start 1 --end 5 --storage-class YOUR-STORAGE-CLASS
+   ```
+
 4. **Monitor Resources**: Watch cluster resource utilization during tests
+   ```bash
+   kubectl top nodes
+   kubectl top pods -A
+   ```
+
 5. **Use Dedicated Namespaces**: Tests create namespaces with predictable names for easy cleanup
+
 6. **Save Results**: Use `--save-results` to preserve test results data for dashboard generation
+   ```bash
+   virtbench datasource-clone --start 1 --end 100 --storage-class YOUR-STORAGE-CLASS --save-results
+   ```
+
 7. **Cleanup**: Remove test resources after completion to free cluster resources
+   ```bash
+   virtbench datasource-clone --start 1 --end 100 --storage-class YOUR-STORAGE-CLASS --cleanup
+   ```
+
 8. **Network Testing**: Deploy an SSH pod in advance for ping tests
+   ```bash
+   kubectl apply -f examples/ssh-pod.yaml
+   kubectl wait --for=condition=Ready pod/ssh-test-pod -n default --timeout=300s
+   ```
 
+9. **Use Log Files**: Save logs for debugging and analysis
+   ```bash
+   virtbench datasource-clone --start 1 --end 100 --storage-class YOUR-STORAGE-CLASS \
+     --log-file test-$(date +%Y%m%d-%H%M%S).log
+   ```
 
-## Contributing
+10. **Run Multiple Iterations**: For reliable benchmarks, run tests multiple times and compare results
 
-We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+---
 
 ## License
 
@@ -899,6 +1786,6 @@ For issues, questions, or contributions:
 ## Acknowledgments
 
 - OpenShift Virtualization Team
-- Portworx Engineering
 - KubeVirt Community
+- All contributors and users
 

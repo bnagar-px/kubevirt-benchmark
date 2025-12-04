@@ -26,12 +26,12 @@ def validate_cluster(ctx, **kwargs):
     - Storage class availability
     - Worker nodes
     - Required permissions
-    
+
     \b
     Examples:
       # Validate cluster with storage class
-      virtbench validate-cluster --storage-class fada-raw-sc
-      
+      virtbench validate-cluster --storage-class YOUR-STORAGE-CLASS
+
       # Quick validation
       virtbench validate-cluster --quick
     """
@@ -49,7 +49,7 @@ def validate_cluster(ctx, **kwargs):
     
     # Map CLI args to Python script args
     python_args = {
-        'log-level': ctx.obj.log_level,
+        'log-level': ctx.obj.log_level.upper(),
     }
     
     # Add optional args

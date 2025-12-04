@@ -35,26 +35,26 @@ console = Console()
 @click.option('--yes', '-y', is_flag=True, help='Skip confirmation prompts')
 @click.option('--save-results', is_flag=True, help='Save detailed results to results folder')
 @click.option('--results-folder', default='../results', help='Base directory to store test results')
-@click.option('--px-version', help='Portworx version (auto-detect if not provided)')
-@click.option('--px-namespace', default='portworx', help='Portworx namespace')
+@click.option('--storage-version', help='Storage version to include in results path (optional)')
+@click.option('--log-file', type=click.Path(), help='Log file path (auto-generated if not specified)')
 @click.pass_context
 def migration(ctx, **kwargs):
     """
     Run VM migration benchmark
-    
+
     This workload tests the performance of live migrating VMs between nodes.
-    
+
     \b
     Examples:
       # Migrate VMs from worker-1
       virtbench migration --start 1 --end 10 --source-node worker-1
-      
+
       # Create VMs first, then migrate
-      virtbench migration --start 1 --end 5 --create-vms --storage-class fada-raw-sc
-      
+      virtbench migration --start 1 --end 5 --create-vms --storage-class YOUR-STORAGE-CLASS
+
       # Parallel migration
       virtbench migration --start 1 --end 10 --source-node worker-1 --parallel
-      
+
       # Evacuate all VMs from a node
       virtbench migration --start 1 --end 10 --source-node worker-1 --evacuate
     """
@@ -99,10 +99,9 @@ def migration(ctx, **kwargs):
         'poll-interval': kwargs['poll_interval'],
         'migration-timeout': kwargs['migration_timeout'],
         'results-folder': kwargs['results_folder'],
-        'px-namespace': kwargs['px_namespace'],
-        'log-level': ctx.obj.log_level,
+        'log-level': ctx.obj.log_level.upper(),
     }
-    
+
     # Add boolean flags
     if kwargs['create_vms']:
         python_args['create-vms'] = True
@@ -116,17 +115,19 @@ def migration(ctx, **kwargs):
         python_args['yes'] = True
     if kwargs['save_results']:
         python_args['save-results'] = True
-    
+
     # Add optional args
     if kwargs.get('source_node'):
         python_args['source-node'] = kwargs['source_node']
     if kwargs.get('target_node'):
         python_args['target-node'] = kwargs['target_node']
-    if kwargs.get('px_version'):
-        python_args['px-version'] = kwargs['px_version']
+    if kwargs.get('storage_version'):
+        python_args['storage-version'] = kwargs['storage_version']
     
-    # Add global flags from context
-    if ctx.obj.log_file:
+    # Add log-file (prefer subcommand option, then global context, then auto-generate)
+    if kwargs.get('log_file'):
+        python_args['log-file'] = kwargs['log_file']
+    elif ctx.obj.log_file:
         python_args['log-file'] = ctx.obj.log_file
     else:
         python_args['log-file'] = generate_log_filename('migration')

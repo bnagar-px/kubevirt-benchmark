@@ -31,23 +31,23 @@ console = Console()
 @click.option('--yes', '-y', is_flag=True, help='Skip confirmation prompts')
 @click.option('--save-results', is_flag=True, help='Save detailed results to results folder')
 @click.option('--results-folder', default='../results', help='Base directory to store test results')
-@click.option('--px-version', help='Portworx version (auto-detect if not provided)')
-@click.option('--px-namespace', default='portworx', help='Portworx namespace')
+@click.option('--storage-version', help='Storage version to include in results path (optional)')
+@click.option('--log-file', type=click.Path(), help='Log file path (auto-generated if not specified)')
 @click.pass_context
 def failure_recovery(ctx, **kwargs):
     """
     Run failure recovery benchmark
-    
+
     This workload tests VM recovery time after simulated node failures.
-    
+
     \b
     Examples:
       # Run failure recovery test
-      virtbench failure-recovery --start 1 --end 5 --storage-class fada-raw-sc
-      
+      virtbench failure-recovery --start 1 --end 5 --storage-class YOUR-STORAGE-CLASS
+
       # Test on specific node
       virtbench failure-recovery --start 1 --end 5 --node-name worker-1
-      
+
       # Run with cleanup
       virtbench failure-recovery --start 1 --end 5 --cleanup
     """
@@ -92,10 +92,9 @@ def failure_recovery(ctx, **kwargs):
         'poll-interval': kwargs['poll_interval'],
         'recovery-timeout': kwargs['recovery_timeout'],
         'results-folder': kwargs['results_folder'],
-        'px-namespace': kwargs['px_namespace'],
-        'log-level': ctx.obj.log_level,
+        'log-level': ctx.obj.log_level.upper(),
     }
-    
+
     # Add boolean flags
     if kwargs['cleanup']:
         python_args['cleanup'] = True
@@ -103,15 +102,17 @@ def failure_recovery(ctx, **kwargs):
         python_args['yes'] = True
     if kwargs['save_results']:
         python_args['save-results'] = True
-    
+
     # Add optional args
     if kwargs.get('node_name'):
         python_args['node-name'] = kwargs['node_name']
-    if kwargs.get('px_version'):
-        python_args['px-version'] = kwargs['px_version']
+    if kwargs.get('storage_version'):
+        python_args['storage-version'] = kwargs['storage_version']
     
-    # Add global flags from context
-    if ctx.obj.log_file:
+    # Add log-file (prefer subcommand option, then global context, then auto-generate)
+    if kwargs.get('log_file'):
+        python_args['log-file'] = kwargs['log_file']
+    elif ctx.obj.log_file:
         python_args['log-file'] = ctx.obj.log_file
     else:
         python_args['log-file'] = generate_log_filename('failure-recovery')

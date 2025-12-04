@@ -29,7 +29,8 @@ def find_repo_root() -> Path:
         RuntimeError: If repository root cannot be found
     """
     # Check VIRTBENCH_REPO env var
-    if repo := os.getenv('VIRTBENCH_REPO'):
+    repo = os.getenv('VIRTBENCH_REPO')
+    if repo:
         repo_path = Path(repo)
         if repo_path.exists() and (repo_path / 'capacity-benchmark').exists():
             return repo_path.resolve()

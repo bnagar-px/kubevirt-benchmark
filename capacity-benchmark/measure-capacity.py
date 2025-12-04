@@ -14,7 +14,7 @@ Each loop iteration performs:
 5. Migrate VMs
 
 Usage:
-    python3 measure-capacity.py --storage-class portworx-fada-sc --vms 5 --data-volume-count 3
+    python3 measure-capacity.py --storage-class YOUR-STORAGE-CLASS --vms 5 --data-volume-count 3
 """
 
 import argparse
@@ -57,16 +57,16 @@ def parse_args():
         epilog="""
 Examples:
   # Run capacity test with default settings
-  python3 measure-capacity.py --storage-class portworx-fada-sc
+  python3 measure-capacity.py --storage-class YOUR-STORAGE-CLASS
 
   # Run with custom VM count and data volumes
-  python3 measure-capacity.py --storage-class portworx-fada-sc --vms 10 --data-volume-count 5
+  python3 measure-capacity.py --storage-class YOUR-STORAGE-CLASS --vms 10 --data-volume-count 5
 
   # Run with maximum iterations limit
-  python3 measure-capacity.py --storage-class portworx-fada-sc --max-iterations 10
+  python3 measure-capacity.py --storage-class YOUR-STORAGE-CLASS --max-iterations 10
 
   # Skip specific jobs
-  python3 measure-capacity.py --storage-class portworx-fada-sc --skip-resize-job --skip-migration-job
+  python3 measure-capacity.py --storage-class YOUR-STORAGE-CLASS --skip-resize-job --skip-migration-job
 
   # Cleanup only mode
   python3 measure-capacity.py --cleanup-only

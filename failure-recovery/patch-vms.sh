@@ -9,7 +9,7 @@ during failure recovery.
 Usage:
     ./patch-vms.sh --namespace-prefix kubevirt-perf-test --start 1 --end 60
 
-Author: Portworx
+Author: KubeVirt Benchmark Suite Contributors
 License: Apache 2.0
 """
 

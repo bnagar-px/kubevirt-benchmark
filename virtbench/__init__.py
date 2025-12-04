@@ -6,6 +6,6 @@ running on OpenShift Container Platform (OCP).
 """
 
 __version__ = '1.0.0'
-__author__ = 'Portworx'
+__author__ = 'KubeVirt Benchmark Suite Contributors'
 __license__ = 'Apache 2.0'
 

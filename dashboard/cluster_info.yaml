@@ -13,27 +13,26 @@
 # -----------------------------------------------------------------------------
 
 cluster:
-  # The installed Portworx version (e.g., "3.5.0")
-  px_version: "3.5.0"
+  # Storage backend version (e.g., "3.5.0", "v1.2.3")
+  storage_version: ""
 
-  # Specific Portworx build identifier or commit hash, if applicable
-  px_build: ""
+  # Storage backend type (e.g., "Ceph", "vSphere", "AWS EBS", "Portworx", etc.)
+  storage_type: ""
 
-  # Short description of your Portworx configuration —
-  # e.g., "default PX store-V2 FACD setup", "PX with SharedV4 and replication=3", etc.
-  px_configuration: "default PX store-V2 FACD setup"
+  # Short description of your storage configuration
+  storage_configuration: ""
 
   # Type of cluster infrastructure —
-  # could be "Bare Metal", "vSphere" etc.
+  # could be "Bare Metal", "vSphere", "AWS", "GCP", "Azure", etc.
   cluster_type: "Bare Metal"
 
-  # FlashArray (Pure Storage FA) URL if your PX setup uses a backend FA
-  fa_url: ""
+  # Storage backend URL if applicable
+  storage_url: ""
 
-  #FlashArray model number (e.g., "FA-420", "FA-450") if applicable
-  fa_model: ""
+  # Storage backend model/type if applicable
+  storage_model: ""
 
-  #Total number of nodes or a description of the node pool (e.g., "5 worker + 3 master")
+  # Total number of nodes or a description of the node pool (e.g., "5 worker + 3 master")
   nodes: ""
 
   # Hardware details of each node in your cluster.
@@ -56,12 +55,12 @@ cluster:
 
   # Live migration tuning parameters from KubeVirt configuration.
   # These control the number of VMs that can migrate simultaneously.
-  live_migration_settings: | 
+  live_migration_settings: |
     Parallel Migrations Per Cluster: 25          # Max concurrent migrations allowed cluster-wide
     Parallel Outbound Migrations Per Node: 5     # Max migrations a single node can send at once
 
   # Live migration script settings
   live_migration_script_settings: |
     concurrency: 50
-    vm_distribution: "equally distributed per node e.g. 400VMs are distributed as 1-80 on node 1, 
+    vm_distribution: "equally distributed per node e.g. 400VMs are distributed as 1-80 on node 1,
     81-160 on node 2, 161-240 on node 3 and so on"

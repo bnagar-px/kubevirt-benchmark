@@ -9,7 +9,7 @@ setup(
     version='1.0.0',
     description='KubeVirt Benchmark Suite - Performance testing toolkit for KubeVirt VMs',
     packages=find_packages(),
-    python_requires='>=3.6',
+    python_requires='>=3.8',
     install_requires=[
         'click>=8.1.7',
         'rich>=13.7.0',

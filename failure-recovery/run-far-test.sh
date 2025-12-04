@@ -12,7 +12,7 @@ This script:
 Usage:
     ./run-far-test.sh --start 1 --end 60 --node-name worker-1 --vm-name rhel-9-vm
 
-Author: Portworx
+Author: KubeVirt Benchmark Suite Contributors
 License: Apache 2.0
 """
 

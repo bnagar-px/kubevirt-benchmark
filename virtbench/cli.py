@@ -75,11 +75,11 @@ def cli(ctx, log_level, log_file, kubeconfig, timeout, uuid):
     \b
     Examples:
       # Validate cluster
-      virtbench validate-cluster --storage-class fada-raw-sc
-      
+      virtbench validate-cluster --storage-class YOUR-STORAGE-CLASS
+
       # Run datasource clone test
-      virtbench datasource-clone --start 1 --end 10 --storage-class fada-raw-sc
-      
+      virtbench datasource-clone --start 1 --end 10 --storage-class YOUR-STORAGE-CLASS
+
       # Run migration test
       virtbench migration --start 1 --end 5 --source-node worker-1
     

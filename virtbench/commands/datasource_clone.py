@@ -18,7 +18,7 @@ console = Console()
 @click.option('--start', '-s', default=1, type=int, help='Start index for test namespaces')
 @click.option('--end', '-e', default=10, type=int, help='End index for test namespaces')
 @click.option('--vm-name', '-n', default='rhel-9-vm', help='VM resource name')
-@click.option('--vm-template', 
+@click.option('--vm-template',
               default='examples/vm-templates/rhel9-vm-datasource.yaml',
               help='Path to VM template YAML')
 @click.option('--storage-class', help='Storage class name (overrides template value)')
@@ -34,42 +34,42 @@ console = Console()
 @click.option('--dry-run-cleanup/--no-dry-run-cleanup', default=False,
               help='Show what would be deleted without actually deleting')
 @click.option('--yes', '-y', is_flag=True, help='Skip confirmation prompt for cleanup')
-@click.option('--skip-namespace-creation', is_flag=True, 
+@click.option('--skip-namespace-creation', is_flag=True,
               help='Skip namespace creation (use existing namespaces)')
-@click.option('--boot-storm', is_flag=True, 
+@click.option('--boot-storm', is_flag=True,
               help='After initial test, shutdown all VMs and test boot storm')
 @click.option('--namespace-batch-size', default=5, type=int,
               help='Number of namespaces to create in parallel')
 @click.option('--single-node', is_flag=True, help='Run all VMs on a single node')
 @click.option('--node-name', help='Specific node name for single-node testing')
-@click.option('--save-results', is_flag=True, 
+@click.option('--save-results', is_flag=True,
               help='Save detailed results (JSON and CSV) to results folder')
-@click.option('--results-folder', default='../results', 
+@click.option('--results-folder', default='../results',
               help='Base directory to store test results')
-@click.option('--px-version', help='Portworx version to include in results path (auto-detect if not provided)')
-@click.option('--px-namespace', default='portworx', help='Namespace where Portworx is installed')
+@click.option('--storage-version', help='Storage version to include in results path (optional)')
+@click.option('--log-file', type=click.Path(), help='Log file path (auto-generated if not specified)')
 @click.pass_context
 def datasource_clone(ctx, **kwargs):
     """
     Run DataSource clone benchmark
-    
+
     This workload tests the performance of creating VMs by cloning from a DataSource,
     which is the recommended approach for VM provisioning in KubeVirt.
-    
+
     \b
     Examples:
       # Run with 10 VMs (namespaces 1-10)
       virtbench datasource-clone --start 1 --end 10
-      
+
       # Run with custom storage class
-      virtbench datasource-clone --start 1 --end 50 --storage-class fada-raw-sc
-      
+      virtbench datasource-clone --start 1 --end 50 --storage-class YOUR-STORAGE-CLASS
+
       # Run with cleanup after test
       virtbench datasource-clone --start 1 --end 20 --cleanup
-      
+
       # Boot storm test
       virtbench datasource-clone --start 1 --end 10 --boot-storm
-      
+
       # Single node test
       virtbench datasource-clone --start 1 --end 10 --single-node --node-name worker-1
     """
@@ -117,10 +117,9 @@ def datasource_clone(ctx, **kwargs):
         'ssh-pod-ns': kwargs['ssh_pod_ns'],
         'namespace-batch-size': kwargs['namespace_batch_size'],
         'results-folder': kwargs['results_folder'],
-        'px-namespace': kwargs['px_namespace'],
-        'log-level': ctx.obj.log_level,
+        'log-level': ctx.obj.log_level.upper(),
     }
-    
+
     # Add boolean flags
     if kwargs['cleanup']:
         python_args['cleanup'] = True
@@ -138,15 +137,17 @@ def datasource_clone(ctx, **kwargs):
         python_args['single-node'] = True
     if kwargs['save_results']:
         python_args['save-results'] = True
-    
+
     # Add optional args
     if kwargs.get('node_name'):
         python_args['node-name'] = kwargs['node_name']
-    if kwargs.get('px_version'):
-        python_args['px-version'] = kwargs['px_version']
+    if kwargs.get('storage_version'):
+        python_args['storage-version'] = kwargs['storage_version']
     
-    # Add global flags from context
-    if ctx.obj.log_file:
+    # Add log-file (prefer subcommand option, then global context, then auto-generate)
+    if kwargs.get('log_file'):
+        python_args['log-file'] = kwargs['log_file']
+    elif ctx.obj.log_file:
         python_args['log-file'] = ctx.obj.log_file
     else:
         python_args['log-file'] = generate_log_filename('datasource-clone')

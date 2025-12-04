@@ -3,12 +3,12 @@
 KubeVirt VM Creation Performance Test - DataSource Clone Method
 
 This script measures VM creation and boot performance when cloning from
-KubeVirt DataSource objects. Optimized for Pure FlashArray Direct Access (FADA).
+KubeVirt DataSource objects. Works with any CSI-compatible storage backend.
 
 Usage:
     python3 measure-vm-creation-time.py --start 1 --end 100 --vm-name rhel-9-vm
 
-Author: Portworx
+Author: KubeVirt Benchmark Suite Contributors
 License: Apache 2.0
 """
 
@@ -30,7 +30,7 @@ from utils.common import (
     delete_namespace, get_vm_status, get_vmi_ip, ping_vm, print_summary_table,
     validate_prerequisites, stop_vm, start_vm, wait_for_vm_stopped,
     get_worker_nodes, select_random_node, add_node_selector_to_vm_yaml,
-    cleanup_test_namespaces, confirm_cleanup, print_cleanup_summary, save_results, get_px_version_from_cluster
+    cleanup_test_namespaces, confirm_cleanup, print_cleanup_summary, save_results
 )
 
 # Default configuration
@@ -215,19 +215,12 @@ Examples:
         help='Base directory to store test results (default: ../results)'
     )
 
-    # Portworx version grouping
+    # Storage version grouping (optional)
     parser.add_argument(
-        '--px-version',
+        '--storage-version',
         type=str,
         default=None,
-        help='Portworx version to include in results path (auto-detect if not provided)'
-    )
-
-    parser.add_argument(
-        '--px-namespace',
-        type=str,
-        default="portworx",
-        help='Default namespace where Portworx is installed'
+        help='Storage version to include in results path (optional)'
     )
 
     
@@ -603,10 +596,8 @@ def main():
     logger.info("=" * 80)
     num_disks_per_vm = 1
 
-    if not args.px_version:
-        args.px_version = get_px_version_from_cluster(logger, namespace=args.px_namespace)
-    else:
-        logger.info(f"Using provided PX version: {args.px_version}")
+    if args.storage_version:
+        logger.info(f"Using provided storage version: {args.storage_version}")
 
     try:
         with open(args.vm_template, 'r') as f:
@@ -745,8 +736,11 @@ def main():
         timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
         suffix = f"{args.namespace_prefix}_{args.start}-{args.end}"
 
-        # Construct versioned results path dynamically
-        out_dir = os.path.join(args.results_folder, args.px_version, f"{num_disks_per_vm}-disk", f"{timestamp}_{suffix}")
+        # Construct results path dynamically
+        if args.storage_version:
+            out_dir = os.path.join(args.results_folder, args.storage_version, f"{num_disks_per_vm}-disk", f"{timestamp}_{suffix}")
+        else:
+            out_dir = os.path.join(args.results_folder, f"{num_disks_per_vm}-disk", f"{timestamp}_{suffix}")
         os.makedirs(out_dir, exist_ok=True)
 
         logger.info(f"Created results directory: {out_dir}")

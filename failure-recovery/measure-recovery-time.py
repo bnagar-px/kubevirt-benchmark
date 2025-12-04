@@ -9,7 +9,7 @@ connectivity restoration.
 Usage:
     python3 measure-recovery-time.py --start 1 --end 60 --vm-name rhel-9-vm
 
-Author: Portworx
+Author: KubeVirt Benchmark Suite Contributors
 License: Apache 2.0
 """
 

@@ -11,17 +11,17 @@ This script measures VM live migration performance across different scenarios:
 Usage:
     # Sequential migration
     python3 measure-vm-migration-time.py --start 1 --end 10 --source-node worker-1 --target-node worker-2
-    
+
     # Parallel migration
     python3 measure-vm-migration-time.py --start 1 --end 50 --source-node worker-1 --target-node worker-2 --parallel --concurrency 10
-    
+
     # Evacuation scenario
     python3 measure-vm-migration-time.py --start 1 --end 100 --source-node worker-1 --evacuate
-    
+
     # Round-robin migration
     python3 measure-vm-migration-time.py --start 1 --end 100 --round-robin
 
-Author: Portworx
+Author: KubeVirt Benchmark Suite Contributors
 License: Apache 2.0
 """
 
@@ -47,7 +47,7 @@ from utils.common import (
     wait_for_migration_complete, get_available_nodes, create_namespace,
     find_busiest_node, get_vms_on_node, remove_node_selectors,
     cleanup_test_namespaces, confirm_cleanup, print_cleanup_summary,
-    list_resources_in_namespace, delete_vmim, save_migration_results, get_px_version_from_cluster
+    list_resources_in_namespace, delete_vmim, save_migration_results
 )
 
 # Default configuration
@@ -119,6 +119,8 @@ Examples:
     # Performance options
     parser.add_argument('-c', '--concurrency', type=int, default=10,
                        help='Number of concurrent migrations (default: 10)')
+    parser.add_argument('--poll-interval', type=int, default=5,
+                       help='Seconds between status checks (default: 5)')
     parser.add_argument('--migration-timeout', type=int, default=600,
                        help='Timeout for each migration in seconds (default: 600)')
     
@@ -157,17 +159,10 @@ Examples:
     )
 
     parser.add_argument(
-        '--px-version',
+        '--storage-version',
         type=str,
         default=None,
-        help='Portworx version to include in results path (auto-detect if not provided)'
-    )
-
-    parser.add_argument(
-        '--px-namespace',
-        type=str,
-        default="portworx",
-        help='Namespace where Portworx is installed (default: portworx)'
+        help='Storage version to include in results path (optional)'
     )
 
     parser.add_argument(
@@ -307,6 +302,7 @@ def migrate_vm_sequential(
     target_node: Optional[str],
     migration_timeout: int,
     logger,
+    poll_interval: int = 2,
     max_retries: int = 10,
     retry_delay: int = 2
 ) -> Tuple[str, bool, float, Optional[str], Optional[str], Optional[float]]:
@@ -347,7 +343,7 @@ def migrate_vm_sequential(
 
         # Wait for migration to complete
         success, observed_duration, actual_target, vmim_duration = wait_for_migration_complete(
-            vm_name, ns, migration_timeout, logger
+            vm_name, ns, migration_timeout, poll_interval, logger
         )
 
         return ns, success, observed_duration, source_node, actual_target, vmim_duration
@@ -373,10 +369,8 @@ def main():
     logger.info(f"Namespace prefix: {args.namespace_prefix}")
     logger.info(f"Create VMs: {args.create_vms}")
 
-    if not args.px_version:
-        args.px_version = get_px_version_from_cluster(logger, namespace=args.px_namespace)
-    else:
-        logger.info(f"Using provided PX version: {args.px_version}")
+    if args.storage_version:
+        logger.info(f"Using provided storage version: {args.storage_version}")
 
     if args.round_robin:
         logger.info("Migration mode: Round-robin")
@@ -590,7 +584,7 @@ def main():
         logger.info(f"\nSequential migration from {args.source_node or 'auto-selected node'} to {args.target_node or 'auto-selected node'}")
 
         for ns in namespaces:
-            result = migrate_vm_sequential(ns, args.vm_name, args.target_node, args.migration_timeout, logger)
+            result = migrate_vm_sequential(ns, args.vm_name, args.target_node, args.migration_timeout, logger, args.poll_interval)
             migration_results.append(result)
 
             # Small delay between migrations
@@ -635,7 +629,8 @@ def main():
                     args.vm_name,
                     args.target_node,
                     args.migration_timeout,
-                    logger
+                    logger,
+                    args.poll_interval
                 ): ns for ns in reordered_namespaces
             }
 
@@ -702,7 +697,7 @@ def main():
         with ThreadPoolExecutor(max_workers=args.concurrency) as executor:
             futures = {
                 executor.submit(migrate_vm_sequential, ns, args.vm_name, None,
-                              args.migration_timeout, logger): ns
+                              args.migration_timeout, logger, args.poll_interval): ns
                 for ns in vms_to_evacuate  # Only migrate VMs on source node
             }
 
@@ -745,7 +740,7 @@ def main():
                     target = None
 
                 future = executor.submit(migrate_vm_sequential, ns, args.vm_name, target,
-                                       args.migration_timeout, logger)
+                                       args.migration_timeout, logger, args.poll_interval)
                 futures[future] = ns
 
             for future in as_completed(futures):
@@ -866,12 +861,19 @@ def main():
         timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
         suffix = f"{args.namespace_prefix}_{args.start}-{args.end}"
 
-        out_dir = os.path.join(
-            args.results_folder,
-            args.px_version,
-            f"{num_disks}-disk",
-            f"{timestamp}_live_migration_{suffix}"
-        )
+        if args.storage_version:
+            out_dir = os.path.join(
+                args.results_folder,
+                args.storage_version,
+                f"{num_disks}-disk",
+                f"{timestamp}_live_migration_{suffix}"
+            )
+        else:
+            out_dir = os.path.join(
+                args.results_folder,
+                f"{num_disks}-disk",
+                f"{timestamp}_live_migration_{suffix}"
+            )
         os.makedirs(out_dir, exist_ok=True)
 
         logger.info(f"Created results directory: {out_dir}")

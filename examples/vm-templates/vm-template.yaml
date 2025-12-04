@@ -2,7 +2,7 @@
 #
 # Template Variables (replace before applying):
 #   {{VM_NAME}}              - VM name (e.g., rhel-9-vm)
-#   {{STORAGE_CLASS_NAME}}   - Storage class name (e.g., portworx-fada-sc, portworx-raw-sc)
+#   {{STORAGE_CLASS_NAME}}   - Storage class name (any CSI-compatible storage class)
 #   {{DATASOURCE_NAME}}      - DataSource name (e.g., rhel9, fedora)
 #   {{DATASOURCE_NAMESPACE}} - DataSource namespace (e.g., openshift-virtualization-os-images)
 #   {{STORAGE_SIZE}}         - Root disk storage size (e.g., 30Gi)
@@ -10,7 +10,7 @@
 #   {{VM_CPU_CORES}}         - Number of CPU cores (e.g., 1, 2, 4)
 #
 # Usage:
-#   sed -i 's/{{STORAGE_CLASS_NAME}}/portworx-fada-sc/g' vm-template.yaml
+#   sed -i 's/{{STORAGE_CLASS_NAME}}/YOUR-STORAGE-CLASS/g' vm-template.yaml
 #   sed -i 's/{{VM_NAME}}/my-vm/g' vm-template.yaml
 #   kubectl apply -f vm-template.yaml -n <namespace>
 #

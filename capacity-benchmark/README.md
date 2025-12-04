@@ -35,29 +35,29 @@ The test runs in a loop without deleting resources until:
 
 ```bash
 # Run capacity test with default settings
-python3 measure-capacity.py --storage-class portworx-fada-sc
+python3 measure-capacity.py --storage-class YOUR-STORAGE-CLASS
 
 # Run with custom VM count per iteration
-python3 measure-capacity.py --storage-class portworx-fada-sc --vms 10
+python3 measure-capacity.py --storage-class YOUR-STORAGE-CLASS --vms 10
 
 # Run with maximum iterations limit
-python3 measure-capacity.py --storage-class portworx-fada-sc --max-iterations 5
+python3 measure-capacity.py --storage-class YOUR-STORAGE-CLASS --max-iterations 5
 ```
 
 ### Advanced Usage
 
 ```bash
 # Run with multiple storage classes (round-robin)
-python3 measure-capacity.py --storage-class portworx-fada-sc,portworx-raw-sc --vms 5
+python3 measure-capacity.py --storage-class storage-class-1,storage-class-2 --vms 5
 
 # Run with custom data volume count
-python3 measure-capacity.py --storage-class portworx-fada-sc --vms 5 --data-volume-count 3
+python3 measure-capacity.py --storage-class YOUR-STORAGE-CLASS --vms 5 --data-volume-count 3
 
 # Skip specific phases
-python3 measure-capacity.py --storage-class portworx-fada-sc --skip-resize-job --skip-migration-job
+python3 measure-capacity.py --storage-class YOUR-STORAGE-CLASS --skip-resize-job --skip-migration-job
 
 # Run with cleanup after completion
-python3 measure-capacity.py --storage-class portworx-fada-sc --max-iterations 3 --cleanup
+python3 measure-capacity.py --storage-class YOUR-STORAGE-CLASS --max-iterations 3 --cleanup
 ```
 
 ### Cleanup
@@ -138,7 +138,7 @@ Test how many VMs your cluster can support:
 
 ```bash
 python3 measure-capacity.py \
-  --storage-class portworx-fada-sc \
+  --storage-class YOUR-STORAGE-CLASS \
   --vms 10 \
   --skip-resize-job \
   --skip-snapshot-job \
@@ -153,7 +153,7 @@ Test volume expansion capabilities:
 
 ```bash
 python3 measure-capacity.py \
-  --storage-class portworx-fada-sc \
+  --storage-class YOUR-STORAGE-CLASS \
   --vms 5 \
   --min-vol-size 30Gi \
   --min-vol-inc-size 20Gi \
@@ -168,7 +168,7 @@ Test all features until failure:
 
 ```bash
 python3 measure-capacity.py \
-  --storage-class portworx-fada-sc \
+  --storage-class YOUR-STORAGE-CLASS \
   --vms 5 \
   --data-volume-count 3 \
   --log-level DEBUG
@@ -182,7 +182,7 @@ Test with multiple storage classes in round-robin:
 
 ```bash
 python3 measure-capacity.py \
-  --storage-class portworx-fada-sc,portworx-raw-sc \
+  --storage-class storage-class-1,storage-class-2 \
   --vms 5 \
   --max-iterations 10
 ```
@@ -196,7 +196,7 @@ The test provides detailed output for each phase:
 ```
 ====================================================================================================
 ITERATION 1
-Storage Class: portworx-fada-sc
+Storage Class: YOUR-STORAGE-CLASS
 VMs to create: 5
 Data volumes per VM: 9
 ====================================================================================================
@@ -236,7 +236,7 @@ ITERATION 1 COMPLETE
 **Solution**: Check if your storage class supports volume expansion:
 
 ```bash
-kubectl get storageclass portworx-fada-sc -o jsonpath='{.allowVolumeExpansion}'
+kubectl get storageclass YOUR-STORAGE-CLASS -o jsonpath='{.allowVolumeExpansion}'
 ```
 
 If `false`, use `--skip-resize-job` to skip this phase.
@@ -260,7 +260,7 @@ If not available, use `--skip-snapshot-job` to skip this phase.
 **Solution**: Check if your storage class supports ReadWriteMany (RWX):
 
 ```bash
-kubectl get storageclass portworx-fada-sc -o yaml | grep -A5 parameters
+kubectl get storageclass YOUR-STORAGE-CLASS -o yaml | grep -A5 parameters
 ```
 
 If RWX is not supported, use `--skip-migration-job` to skip this phase.
