@@ -21,16 +21,23 @@ console = Console()
 @click.option('--vm-template',
               default='examples/vm-templates/rhel9-vm-datasource.yaml',
               help='Path to VM template YAML')
-@click.option('--storage-class', help='Storage class name (overrides template value)')
+@click.option('--storage-class', help='Storage class name (required with --create-vms)')
 @click.option('--namespace-prefix', default='migration', help='Namespace prefix')
-@click.option('--source-node', help='Source node name to migrate VMs from')
+@click.option('--source-node', help='Source node for VM creation and migration')
 @click.option('--target-node', help='Target node name to migrate VMs to')
-@click.option('--create-vms', is_flag=True, help='Create VMs before migration')
+@click.option('--create-vms', is_flag=True, help='Create VMs on source node before migration (requires --storage-class)')
 @click.option('--parallel', is_flag=True, help='Migrate all VMs in parallel')
 @click.option('--evacuate', is_flag=True, help='Evacuate all VMs from source node')
 @click.option('--concurrency', '-c', default=10, type=int, help='Max parallel threads')
 @click.option('--poll-interval', default=5, type=int, help='Seconds between status checks')
 @click.option('--migration-timeout', default=600, type=int, help='Timeout for migration in seconds')
+@click.option('--vm-startup-timeout', default=3600, type=int,
+              help='Timeout waiting for VMs to reach Running state (default: 3600s = 1 hour)')
+@click.option('--ping-timeout', default=3600, type=int,
+              help='Timeout for ping validation in seconds (default: 3600s = 1 hour)')
+@click.option('--skip-ping', is_flag=True, help='Skip ping validation after migration')
+@click.option('--ssh-pod', default='ssh-test-pod', help='SSH pod name for ping tests (default: ssh-test-pod)')
+@click.option('--ssh-pod-ns', default='default', help='SSH pod namespace (default: default)')
 @click.option('--cleanup/--no-cleanup', default=False, help='Delete test resources after completion')
 @click.option('--yes', '-y', is_flag=True, help='Skip confirmation prompts')
 @click.option('--save-results', is_flag=True, help='Save detailed results to results folder')
@@ -43,38 +50,54 @@ def migration(ctx, **kwargs):
     Run VM migration benchmark
 
     This workload tests the performance of live migrating VMs between nodes.
+    VMs must exist before migration. Use --create-vms with --storage-class
+    to create VMs as part of the test.
 
     \b
     Examples:
-      # Migrate VMs from worker-1
-      virtbench migration --start 1 --end 10 --source-node worker-1
+      # Create VMs on source node and migrate to target
+      virtbench migration --start 1 --end 10 --source-node worker-1 --target-node worker-2 \\
+        --create-vms --storage-class YOUR-STORAGE-CLASS --save-results
 
-      # Create VMs first, then migrate
-      virtbench migration --start 1 --end 5 --create-vms --storage-class YOUR-STORAGE-CLASS
+      # Create VMs, migrate, and cleanup after test
+      virtbench migration --start 1 --end 10 --source-node worker-1 \\
+        --create-vms --storage-class YOUR-STORAGE-CLASS --cleanup --save-results
 
-      # Parallel migration
-      virtbench migration --start 1 --end 10 --source-node worker-1 --parallel
+      # Parallel migration with VM creation
+      virtbench migration --start 1 --end 50 --source-node worker-1 \\
+        --create-vms --storage-class YOUR-STORAGE-CLASS --parallel --concurrency 10
+
+      # Migrate existing VMs (no --create-vms)
+      virtbench migration --start 1 --end 10 --source-node worker-1 --save-results
 
       # Evacuate all VMs from a node
-      virtbench migration --start 1 --end 10 --source-node worker-1 --evacuate
+      virtbench migration --start 1 --end 100 --source-node worker-1 --evacuate
     """
     print_banner("VM Migration Benchmark")
-    
+
     # Get repo root from context
     repo_root = ctx.obj.repo_root
-    
+
+    # Validate --create-vms requires --storage-class
+    if kwargs['create_vms'] and not kwargs['storage_class']:
+        console.print("[red]Error: --storage-class is required when using --create-vms[/red]")
+        console.print("[yellow]Hint: Specify the storage class to use for VM creation:[/yellow]")
+        console.print("  virtbench migration --create-vms --storage-class YOUR-STORAGE-CLASS ...")
+        sys.exit(1)
+
     # Resolve template path
     template_path = Path(kwargs['vm_template'])
     if not template_path.is_absolute():
         template_path = repo_root / template_path
-    
+
     if kwargs['create_vms'] and not template_path.exists():
         console.print(f"[red]Error: Template file not found: {template_path}[/red]")
         sys.exit(1)
-    
+
     # Handle storage class modification
     if kwargs['storage_class'] and kwargs['create_vms']:
         console.print(f"[cyan]Using storage class: {kwargs['storage_class']}[/cyan]")
+        console.print(f"[cyan]VMs will be created on source node: {kwargs.get('source_node', 'auto-selected')}[/cyan]")
         try:
             modify_storage_class(template_path, kwargs['storage_class'])
         except Exception as e:
@@ -98,6 +121,10 @@ def migration(ctx, **kwargs):
         'concurrency': kwargs['concurrency'],
         'poll-interval': kwargs['poll_interval'],
         'migration-timeout': kwargs['migration_timeout'],
+        'vm-startup-timeout': kwargs['vm_startup_timeout'],
+        'ping-timeout': kwargs['ping_timeout'],
+        'ssh-pod': kwargs['ssh_pod'],
+        'ssh-pod-ns': kwargs['ssh_pod_ns'],
         'results-folder': kwargs['results_folder'],
         'log-level': ctx.obj.log_level.upper(),
     }
@@ -115,6 +142,8 @@ def migration(ctx, **kwargs):
         python_args['yes'] = True
     if kwargs['save_results']:
         python_args['save-results'] = True
+    if kwargs['skip_ping']:
+        python_args['skip-ping'] = True
 
     # Add optional args
     if kwargs.get('source_node'):

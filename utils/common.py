@@ -1899,20 +1899,31 @@ def validate_prerequisites(ssh_pod: str, ssh_pod_ns: str, logger: logging.Logger
         logger.error(f"[FAIL] kubectl connectivity failed: {e}")
         return False
 
-    # Check SSH pod exists
+    # Check SSH pod exists and is Running
     try:
-        returncode, _, _ = run_kubectl_command(
-            ['get', 'pod', ssh_pod, '-n', ssh_pod_ns],
+        returncode, stdout, _ = run_kubectl_command(
+            ['get', 'pod', ssh_pod, '-n', ssh_pod_ns, '-o', 'jsonpath={.status.phase}'],
             check=False,
+            capture_output=True,
             logger=logger
         )
-        if returncode == 0:
-            logger.info(f"[OK] SSH pod {ssh_pod} found in namespace {ssh_pod_ns}")
+        if returncode == 0 and stdout.strip() == 'Running':
+            logger.info(f"[OK] SSH pod '{ssh_pod}' is Running in namespace '{ssh_pod_ns}'")
+        elif returncode == 0:
+            pod_status = stdout.strip() if stdout.strip() else 'Unknown'
+            logger.error(f"[FAIL] SSH pod '{ssh_pod}' exists but is not Running (status: {pod_status})")
+            logger.error(f"  Please ensure the SSH pod is running before starting tests.")
+            logger.error(f"  Check pod status: kubectl get pod {ssh_pod} -n {ssh_pod_ns}")
+            return False
         else:
-            logger.warning(f"[WARN] SSH pod {ssh_pod} not found in namespace {ssh_pod_ns}")
-            logger.warning("  Ping tests will fail. Create an SSH pod or skip ping tests.")
+            logger.error(f"[FAIL] SSH pod '{ssh_pod}' not found in namespace '{ssh_pod_ns}'")
+            logger.error(f"  The SSH pod is required for network validation (ping tests).")
+            logger.error(f"  Please create an SSH pod or use --skip-ping to skip network validation.")
+            logger.error(f"  Example: kubectl run {ssh_pod} --image=alpine -n {ssh_pod_ns} -- sleep infinity")
+            return False
     except Exception as e:
-        logger.warning(f"[WARN] Error checking SSH pod: {e}")
+        logger.error(f"[FAIL] Error checking SSH pod: {e}")
+        return False
 
     return True
 

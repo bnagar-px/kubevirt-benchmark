@@ -270,15 +270,19 @@ def ensure_namespaces(start: int, end: int, prefix: str, batch_size: int, logger
     return namespaces
 
 
-def create_vm(ns: str, vm_yaml: str, node_name: Optional[str], logger) -> Tuple[str, datetime]:
+def create_vm(ns: str, vm_yaml: str, node_name: Optional[str], logger,
+              max_retries: int = 5, initial_delay: float = 2.0) -> Tuple[str, datetime]:
     """
-    Create a VM in the specified namespace.
+    Create a VM in the specified namespace with retry logic.
 
     Args:
         ns: Namespace name
         vm_yaml: Path to VM YAML file
         node_name: Optional node name to pin VM to
         logger: Logger instance
+        max_retries: Maximum number of retry attempts (default: 5)
+        initial_delay: Initial delay between retries in seconds (default: 2.0)
+                      Uses exponential backoff: delay * 2^attempt
 
     Returns:
         Tuple of (namespace, creation_timestamp)
@@ -286,52 +290,89 @@ def create_vm(ns: str, vm_yaml: str, node_name: Optional[str], logger) -> Tuple[
     logger.info(f"[{ns}] Creating VM from {vm_yaml}")
     start_ts = datetime.now()
 
-    try:
-        # If node_name is specified, modify YAML to add nodeSelector
-        if node_name:
-            logger.debug(f"[{ns}] Adding nodeSelector for node: {node_name}")
-            modified_yaml = add_node_selector_to_vm_yaml(vm_yaml, node_name, logger)
+    # List of retryable error patterns
+    retryable_errors = [
+        'context deadline exceeded',
+        'webhook',
+        'Internal error',
+        'InternalError',
+        'connection refused',
+        'timeout',
+        'temporarily unavailable'
+    ]
 
-            if modified_yaml:
-                # Create VM using modified YAML via stdin
-                process = subprocess.Popen(
-                    ['kubectl', 'create', '-f', '-', '-n', ns],
-                    stdin=subprocess.PIPE,
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.PIPE,
-                    text=True
-                )
-                stdout, stderr = process.communicate(input=modified_yaml)
-                returncode = process.returncode
+    for attempt in range(1, max_retries + 1):
+        try:
+            # If node_name is specified, modify YAML to add nodeSelector
+            if node_name:
+                logger.debug(f"[{ns}] Adding nodeSelector for node: {node_name}")
+                modified_yaml = add_node_selector_to_vm_yaml(vm_yaml, node_name, logger)
+
+                if modified_yaml:
+                    # Create VM using modified YAML via stdin
+                    process = subprocess.Popen(
+                        ['kubectl', 'create', '-f', '-', '-n', ns],
+                        stdin=subprocess.PIPE,
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.PIPE,
+                        text=True
+                    )
+                    stdout, stderr = process.communicate(input=modified_yaml)
+                    returncode = process.returncode
+                else:
+                    logger.warning(f"[{ns}] Failed to modify YAML, creating without nodeSelector")
+                    returncode, stdout, stderr = run_kubectl_command(
+                        ['create', '-f', vm_yaml, '-n', ns],
+                        check=False,
+                        logger=logger
+                    )
             else:
-                logger.warning(f"[{ns}] Failed to modify YAML, creating without nodeSelector")
+                # Create VM normally without nodeSelector
                 returncode, stdout, stderr = run_kubectl_command(
                     ['create', '-f', vm_yaml, '-n', ns],
                     check=False,
                     logger=logger
                 )
-        else:
-            # Create VM normally without nodeSelector
-            returncode, stdout, stderr = run_kubectl_command(
-                ['create', '-f', vm_yaml, '-n', ns],
-                check=False,
-                logger=logger
-            )
 
-        if returncode == 0:
-            logger.info(f"[{ns}] VM creation API call completed")
-        else:
-            if 'AlreadyExists' in stderr:
-                logger.warning(f"[{ns}] VM already exists, continuing with existing VM")
+            if returncode == 0:
+                logger.info(f"[{ns}] VM creation API call completed")
+                return ns, start_ts
             else:
-                logger.error(f"[{ns}] VM creation failed: {stderr}")
-                raise RuntimeError(f"Failed to create VM in {ns}: {stderr}")
+                if 'AlreadyExists' in stderr:
+                    logger.warning(f"[{ns}] VM already exists, continuing with existing VM")
+                    return ns, start_ts
 
-    except Exception as e:
-        logger.error(f"[{ns}] Exception during VM creation: {e}")
-        raise
+                # Check if it's a retryable error
+                is_retryable = any(err in stderr for err in retryable_errors)
 
-    return ns, start_ts
+                if is_retryable and attempt < max_retries:
+                    delay = initial_delay * (2 ** (attempt - 1))  # Exponential backoff
+                    logger.warning(f"[{ns}] Retryable error (attempt {attempt}/{max_retries}): {stderr.strip()}")
+                    logger.info(f"[{ns}] Retrying in {delay:.1f}s...")
+                    time.sleep(delay)
+                    continue
+                elif is_retryable:
+                    logger.error(f"[{ns}] VM creation failed after {max_retries} attempts: {stderr}")
+                    raise RuntimeError(f"Failed to create VM in {ns} after {max_retries} attempts: {stderr}")
+                else:
+                    # Non-retryable error
+                    logger.error(f"[{ns}] VM creation failed: {stderr}")
+                    raise RuntimeError(f"Failed to create VM in {ns}: {stderr}")
+
+        except RuntimeError:
+            raise
+        except Exception as e:
+            if attempt < max_retries:
+                delay = initial_delay * (2 ** (attempt - 1))
+                logger.warning(f"[{ns}] Exception (attempt {attempt}/{max_retries}): {e}")
+                logger.info(f"[{ns}] Retrying in {delay:.1f}s...")
+                time.sleep(delay)
+            else:
+                logger.error(f"[{ns}] Exception after {max_retries} attempts: {e}")
+                raise
+
+    # Should not reach here, but just in case
+    raise RuntimeError(f"Failed to create VM in {ns} after {max_retries} attempts")
 
 
 def wait_for_vm_running(ns: str, vm_name: str, start_ts: datetime, poll_interval: int, logger) -> Tuple[str, float]:

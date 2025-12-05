@@ -166,7 +166,7 @@ kubectl get storageclass
 
 #### Step 5: Create SSH Pod for Network Tests
 
-The SSH pod is required for ping tests that validate VM network connectivity:
+The SSH pod is required for ping tests that validate VM network connectivity. **All tests will fail to start if the SSH pod is not running** (unless you use `--skip-ping` to skip network validation).
 
 ```bash
 # 5.1 Create the SSH test pod
@@ -180,6 +180,8 @@ kubectl get pod ssh-test-pod -n default
 # Expected: NAME           READY   STATUS    RESTARTS   AGE
 #           ssh-test-pod   1/1     Running   0          ...
 ```
+
+> **Important:** The default SSH pod name is `ssh-test-pod` in namespace `default`. If you use a different pod name or namespace, specify it with `--ssh-pod` and `--ssh-pod-ns` options.
 
 #### Step 6: Verify DataSource Availability
 
@@ -316,6 +318,8 @@ grep "storageClassName:" examples/vm-templates/*.yaml
 
 #### Step 5: Create SSH Pod for Network Tests
 
+**All tests will fail to start if the SSH pod is not running** (unless you use `--skip-ping`).
+
 ```bash
 # 5.1 Create the SSH test pod
 kubectl apply -f examples/ssh-pod.yaml
@@ -326,6 +330,8 @@ kubectl wait --for=condition=Ready pod/ssh-test-pod -n default --timeout=300s
 # 5.3 Verify the pod is running
 kubectl get pod ssh-test-pod -n default
 ```
+
+> **Note:** Default SSH pod name is `ssh-test-pod` in namespace `default`. Use `--ssh-pod` and `--ssh-pod-ns` to specify a different pod.
 
 #### Step 6: Verify DataSource Availability
 
@@ -559,6 +565,73 @@ Tests VM live migration performance across different scenarios.
 
 **Use Case**: Validates migration performance for node maintenance, load balancing, and disaster recovery scenarios.
 
+#### Prerequisites: VMs Must Exist
+
+Live migration tests require VMs to already exist. You have two options:
+
+**Option 1: Create VMs as part of the migration test (Recommended)**
+
+Use `--create-vms` with `--storage-class` to create VMs on the source node before migration:
+
+**virtbench CLI:**
+```bash
+# Create 10 VMs on source node and migrate them to target node
+virtbench migration \
+  --start 1 \
+  --end 10 \
+  --source-node worker-1 \
+  --target-node worker-2 \
+  --create-vms \
+  --storage-class YOUR-STORAGE-CLASS \
+  --save-results
+
+# Create VMs, migrate, and cleanup after test
+virtbench migration \
+  --start 1 \
+  --end 10 \
+  --source-node worker-1 \
+  --target-node worker-2 \
+  --create-vms \
+  --storage-class YOUR-STORAGE-CLASS \
+  --cleanup \
+  --save-results
+```
+
+**Python script:**
+```bash
+cd migration
+
+# Create 10 VMs on source node and migrate them to target node
+python3 measure-vm-migration-time.py \
+  --start 1 \
+  --end 10 \
+  --source-node worker-1 \
+  --target-node worker-2 \
+  --create-vms \
+  --vm-template ../examples/vm-templates/rhel9-vm-datasource.yaml \
+  --save-results
+```
+
+> **⚠️ Important:** When using `--create-vms`, you must either:
+> - Provide `--storage-class YOUR-STORAGE-CLASS` to specify the storage class at runtime, OR
+> - Pre-configure your VM template with the correct storage class before running the test
+
+**Option 2: Use existing VMs**
+
+If VMs already exist (e.g., created by datasource-clone tests), you can migrate them directly:
+
+```bash
+# Migrate existing VMs (assumes VMs exist in migration-1 through migration-10 namespaces)
+virtbench migration \
+  --start 1 \
+  --end 10 \
+  --namespace-prefix migration \
+  --source-node worker-1 \
+  --save-results
+```
+
+---
+
 #### Sequential Migration
 
 **virtbench CLI:**
@@ -569,6 +642,8 @@ virtbench migration \
   --end 10 \
   --source-node worker-1 \
   --target-node worker-2 \
+  --create-vms \
+  --storage-class YOUR-STORAGE-CLASS \
   --save-results
 ```
 
@@ -582,6 +657,7 @@ python3 measure-vm-migration-time.py \
   --end 10 \
   --source-node worker-1 \
   --target-node worker-2 \
+  --create-vms \
   --save-results
 ```
 
@@ -595,6 +671,8 @@ virtbench migration \
   --end 50 \
   --source-node worker-1 \
   --target-node worker-2 \
+  --create-vms \
+  --storage-class YOUR-STORAGE-CLASS \
   --parallel \
   --concurrency 10 \
   --save-results
@@ -610,6 +688,7 @@ python3 measure-vm-migration-time.py \
   --end 50 \
   --source-node worker-1 \
   --target-node worker-2 \
+  --create-vms \
   --parallel \
   --concurrency 10 \
   --save-results
@@ -1359,9 +1438,10 @@ kubectl get storageclass
 | `--round-robin` | Migrate VMs in round-robin fashion across all nodes | false |
 | `--concurrency` | Number of concurrent migrations | 10 |
 | `--migration-timeout` | Timeout for each migration in seconds | 600 |
-| `--ssh-pod` | SSH test pod name for ping tests | ssh-pod-name |
+| `--vm-startup-timeout` | Timeout waiting for VMs to reach Running state | 3600 (1 hour) |
+| `--ssh-pod` | SSH test pod name for ping tests | ssh-test-pod |
 | `--ssh-pod-ns` | SSH test pod namespace | default |
-| `--ping-timeout` | Timeout for ping test in seconds | 600 |
+| `--ping-timeout` | Timeout for ping validation in seconds | 3600 (1 hour) |
 | `--skip-ping` | Skip ping validation after migration | false |
 | `--interleaved-scheduling` | Distribute parallel migration threads in interleaved pattern across nodes | false |
 | `--log-file` | Output log file path | stdout |
@@ -1388,6 +1468,66 @@ kubectl get storageclass
 | `--poll-interval` | Seconds between polls | 1 |
 | `--log-file` | Output log file path | stdout |
 | `--log-level` | Logging level | INFO |
+
+### Capacity Benchmark Tests
+
+#### Required Options
+
+| Option | Description |
+|--------|-------------|
+| `--storage-class` | Storage class name (comma-separated for multiple) |
+
+#### Test Configuration
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `--namespace` | `virt-capacity-benchmark` | Namespace for test resources |
+| `--max-iterations` | `0` (unlimited) | Maximum number of iterations |
+| `--vms` | `5` | Number of VMs per iteration |
+| `--data-volume-count` | `9` | Number of data volumes per VM |
+| `--min-vol-size` | `30Gi` | Initial volume size |
+| `--min-vol-inc-size` | `10Gi` | Volume size increment for resize |
+
+#### VM Template Configuration
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `--vm-yaml` | `../examples/vm-templates/vm-template.yaml` | Path to VM YAML template |
+| `--vm-name` | `capacity-vm` | Base VM name |
+| `--datasource-name` | `rhel9` | DataSource name |
+| `--datasource-namespace` | `openshift-virtualization-os-images` | DataSource namespace |
+| `--vm-memory` | `2048M` | VM memory |
+| `--vm-cpu-cores` | `1` | VM CPU cores |
+
+#### Skip Options
+
+| Option | Description |
+|--------|-------------|
+| `--skip-resize-job` | Skip volume resize phase |
+| `--skip-migration-job` | Skip migration phase |
+| `--skip-snapshot-job` | Skip snapshot phase |
+| `--skip-restart-job` | Skip restart phase |
+
+#### Execution Options
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `--concurrency` | `10` | Number of concurrent operations |
+| `--poll-interval` | `5` | Polling interval in seconds |
+
+#### Cleanup Options
+
+| Option | Description |
+|--------|-------------|
+| `--cleanup` | Cleanup resources after test completion |
+| `--cleanup-only` | Only cleanup resources from previous runs |
+
+#### Logging Options
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `--log-file` | Auto-generated | Log file path |
+| `--log-level` | `INFO` | Logging level (DEBUG, INFO, WARNING, ERROR) |
 
 ## Output and Results
 
@@ -1459,6 +1599,39 @@ Detailed logs are saved to the specified log file with:
 - Check DataVolume status: `kubectl get dv -n openshift-virtualization-os-images`
 - Verify registry image stream exists: `kubectl get imagestream -n openshift-virtualization-os-images`
 - Check CDI operator logs: `kubectl logs -n openshift-cnv -l name=cdi-operator`
+
+### Capacity Benchmark Issues
+
+**Issue**: Volume resize fails
+- Check if your storage class supports volume expansion:
+  ```bash
+  kubectl get storageclass YOUR-STORAGE-CLASS -o jsonpath='{.allowVolumeExpansion}'
+  ```
+- If `false`, use `--skip-resize-job` to skip this phase
+
+**Issue**: Snapshot creation fails
+- Check if VolumeSnapshotClass is configured:
+  ```bash
+  kubectl get volumesnapshotclass
+  ```
+- If not available, use `--skip-snapshot-job` to skip this phase
+
+**Issue**: Migration fails during capacity test
+- Check if your storage class supports ReadWriteMany (RWX):
+  ```bash
+  kubectl get storageclass YOUR-STORAGE-CLASS -o yaml | grep -A5 parameters
+  ```
+- If RWX is not supported, use `--skip-migration-job` to skip this phase
+
+**Issue**: Out of resources (VM creation fails or PVC pending)
+- This indicates you've reached capacity limits. Check:
+  ```bash
+  # Check node resources
+  kubectl top nodes
+
+  # Check PVC status
+  kubectl get pvc -n virt-capacity-benchmark
+  ```
 
 ### Debug Mode
 
@@ -1741,8 +1914,7 @@ kubevirt-benchmark-suite/
 │   └── measure-vm-migration-time.py  # Main migration test script
 │
 ├── capacity-benchmark/                # Capacity benchmark tests
-│   ├── measure-capacity.py           # Main capacity test script
-│   └── README.md                     # Capacity benchmark documentation
+│   └── measure-capacity.py           # Main capacity test script
 │
 ├── failure-recovery/                  # Failure and recovery tests
 │   ├── measure-recovery-time.py      # Recovery measurement script

@@ -123,14 +123,16 @@ Examples:
                        help='Seconds between status checks (default: 5)')
     parser.add_argument('--migration-timeout', type=int, default=600,
                        help='Timeout for each migration in seconds (default: 600)')
+    parser.add_argument('--vm-startup-timeout', type=int, default=3600,
+                       help='Timeout waiting for VMs to reach Running state in seconds (default: 3600 = 1 hour)')
     
     # Validation options
-    parser.add_argument('--ssh-pod', type=str, default='ssh-pod-name',
-                       help='SSH test pod name for ping tests (default: ssh-pod-name)')
+    parser.add_argument('--ssh-pod', type=str, default='ssh-test-pod',
+                       help='SSH test pod name for ping tests (default: ssh-test-pod)')
     parser.add_argument('--ssh-pod-ns', type=str, default='default',
                        help='SSH test pod namespace (default: default)')
-    parser.add_argument('--ping-timeout', type=int, default=600,
-                       help='Timeout for ping test in seconds (default: 600)')
+    parser.add_argument('--ping-timeout', type=int, default=3600,
+                       help='Timeout for ping validation in seconds (default: 3600 = 1 hour)')
     parser.add_argument('--skip-ping', action='store_true',
                        help='Skip ping validation after migration')
     
@@ -225,73 +227,184 @@ def validate_migration_args(args, logger):
 
 
 def create_vms_on_node(namespaces: List[str], vm_yaml: str, node_name: str,
-                       vm_name: str, logger) -> Dict[str, bool]:
+                       vm_name: str, logger, max_retries: int = 5,
+                       initial_delay: float = 2.0) -> Dict[str, bool]:
     """
-    Create VMs on a specific node.
-    
+    Create VMs on a specific node with retry logic.
+
+    Args:
+        namespaces: List of namespaces to create VMs in
+        vm_yaml: Path to VM YAML template
+        node_name: Node to create VMs on (can be None for no node selector)
+        vm_name: VM resource name
+        logger: Logger instance
+        max_retries: Maximum number of retry attempts (default: 5)
+        initial_delay: Initial delay between retries in seconds (default: 2.0)
+                      Uses exponential backoff: delay * 2^attempt
+
     Returns:
         Dictionary mapping namespace to success status
     """
-    logger.info(f"\nCreating {len(namespaces)} VMs on node {node_name}...")
-    
-    # Import create_vm function from datasource-clone script
-    # For now, we'll use a simplified version
+    if node_name:
+        logger.info(f"\nCreating {len(namespaces)} VMs on node {node_name}...")
+    else:
+        logger.info(f"\nCreating {len(namespaces)} VMs (no node selector)...")
+
     from utils.common import add_node_selector_to_vm_yaml
     import subprocess
-    
+
     results = {}
-    
+
     for ns in namespaces:
-        try:
-            # Modify VM YAML to add nodeSelector
-            modified_yaml = add_node_selector_to_vm_yaml(vm_yaml, node_name, logger)
-            
-            if not modified_yaml:
-                logger.error(f"[{ns}] Failed to modify VM YAML")
-                results[ns] = False
-                continue
-            
-            # Create VM
-            result = subprocess.run(
-                f"kubectl create -f - -n {ns}",
-                shell=True, input=modified_yaml.encode(), capture_output=True
-            )
-            
-            if result.returncode == 0:
-                logger.info(f"[{ns}] VM created successfully")
-                results[ns] = True
-            else:
-                logger.error(f"[{ns}] Failed to create VM: {result.stderr.decode()}")
-                results[ns] = False
-        
-        except Exception as e:
-            logger.error(f"[{ns}] Exception creating VM: {e}")
-            results[ns] = False
-    
+        success = False
+        last_error = None
+
+        for attempt in range(1, max_retries + 1):
+            try:
+                # Modify VM YAML to add nodeSelector if node_name is specified
+                if node_name:
+                    modified_yaml = add_node_selector_to_vm_yaml(vm_yaml, node_name, logger)
+                    if not modified_yaml:
+                        logger.error(f"[{ns}] Failed to modify VM YAML")
+                        last_error = "Failed to modify VM YAML"
+                        break  # Don't retry YAML modification failures
+                else:
+                    # Read the YAML file directly without node selector
+                    with open(vm_yaml, 'r') as f:
+                        modified_yaml = f.read()
+
+                # Create VM
+                result = subprocess.run(
+                    f"kubectl create -f - -n {ns}",
+                    shell=True, input=modified_yaml.encode(), capture_output=True
+                )
+
+                if result.returncode == 0:
+                    logger.info(f"[{ns}] VM created successfully")
+                    success = True
+                    break
+                else:
+                    error_msg = result.stderr.decode().strip()
+                    last_error = error_msg
+
+                    # Check if it's a retryable error (webhook timeout, internal error)
+                    retryable_errors = [
+                        'context deadline exceeded',
+                        'webhook',
+                        'Internal error',
+                        'InternalError',
+                        'connection refused',
+                        'timeout',
+                        'temporarily unavailable'
+                    ]
+
+                    is_retryable = any(err in error_msg for err in retryable_errors)
+
+                    if is_retryable and attempt < max_retries:
+                        delay = initial_delay * (2 ** (attempt - 1))  # Exponential backoff
+                        logger.warning(f"[{ns}] Retryable error (attempt {attempt}/{max_retries}): {error_msg}")
+                        logger.info(f"[{ns}] Retrying in {delay:.1f}s...")
+                        time.sleep(delay)
+                    elif is_retryable:
+                        logger.error(f"[{ns}] Failed after {max_retries} attempts: {error_msg}")
+                    else:
+                        # Non-retryable error, fail immediately
+                        logger.error(f"[{ns}] Failed to create VM: {error_msg}")
+                        break
+
+            except Exception as e:
+                last_error = str(e)
+                if attempt < max_retries:
+                    delay = initial_delay * (2 ** (attempt - 1))
+                    logger.warning(f"[{ns}] Exception (attempt {attempt}/{max_retries}): {e}")
+                    logger.info(f"[{ns}] Retrying in {delay:.1f}s...")
+                    time.sleep(delay)
+                else:
+                    logger.error(f"[{ns}] Exception after {max_retries} attempts: {e}")
+
+        results[ns] = success
+        if not success and last_error:
+            logger.debug(f"[{ns}] Final error: {last_error}")
+
+    # Log summary
+    successful = sum(1 for v in results.values() if v)
+    failed = len(results) - successful
+    logger.info(f"\nVM creation complete: {successful} successful, {failed} failed")
+
     return results
 
 
-def wait_for_vms_running(namespaces: List[str], vm_name: str, timeout: int, logger) -> Dict[str, bool]:
-    """Wait for all VMs to reach Running state."""
-    logger.info(f"\nWaiting for {len(namespaces)} VMs to reach Running state...")
+def wait_for_vms_running(namespaces: List[str], vm_name: str, timeout: int, logger,
+                         poll_interval: int = 10) -> Dict[str, bool]:
+    """
+    Wait for all VMs to reach Running state with polling.
 
-    results = {}
+    Args:
+        namespaces: List of namespaces containing VMs
+        vm_name: VM resource name
+        timeout: Maximum time to wait in seconds (default should be 3600 = 1 hour)
+        logger: Logger instance
+        poll_interval: Seconds between status checks (default: 10)
+
+    Returns:
+        Dictionary mapping namespace to success status (True if Running)
+    """
+    logger.info(f"\nWaiting for {len(namespaces)} VMs to reach Running state (timeout: {timeout}s)...")
+
+    # Track which VMs are still pending
+    pending = set(namespaces)
+    results = {ns: False for ns in namespaces}
     start_time = time.time()
 
-    for ns in namespaces:
+    while pending and (time.time() - start_time) < timeout:
         elapsed = time.time() - start_time
-        remaining = max(0, timeout - elapsed)
 
-        if remaining <= 0:
-            logger.warning(f"[{ns}] Timeout waiting for VMs to reach Running state")
+        # Check status of all pending VMs
+        still_pending = set()
+        for ns in pending:
+            status = get_vm_status(vm_name, ns, logger)
+
+            if status == "Running":
+                logger.info(f"[{ns}] VM is now Running")
+                results[ns] = True
+            elif status in ["Provisioning", "Starting", "Stopped", "WaitingForVolumeBinding",
+                           "Scheduling", "Scheduled", "DataVolumeError", None]:
+                # VM is still starting up - keep waiting
+                still_pending.add(ns)
+            else:
+                # Unexpected status - could be an error
+                logger.warning(f"[{ns}] VM has unexpected status: {status}")
+                still_pending.add(ns)
+
+        pending = still_pending
+
+        if pending:
+            running_count = len(namespaces) - len(pending)
+            remaining_time = timeout - elapsed
+            logger.info(f"VMs running: {running_count}/{len(namespaces)} | "
+                       f"Pending: {len(pending)} | "
+                       f"Elapsed: {elapsed:.0f}s | "
+                       f"Remaining: {remaining_time:.0f}s")
+
+            # Log which VMs are still pending (only first few to avoid spam)
+            if len(pending) <= 5:
+                for ns in pending:
+                    status = get_vm_status(vm_name, ns, logger)
+                    logger.debug(f"  [{ns}] status: {status}")
+
+            time.sleep(poll_interval)
+
+    # Final status check for any remaining pending VMs
+    if pending:
+        logger.warning(f"\nTimeout reached. {len(pending)} VMs did not reach Running state:")
+        for ns in pending:
+            status = get_vm_status(vm_name, ns, logger)
+            logger.warning(f"  [{ns}] final status: {status}")
             results[ns] = False
-            continue
 
-        status = get_vm_status(vm_name, ns, logger)
-        results[ns] = (status == "Running")
-
-        if not results[ns]:
-            logger.warning(f"[{ns}] VM did not reach Running state (status: {status})")
+    # Summary
+    running_count = sum(1 for v in results.values() if v)
+    logger.info(f"\nVM startup complete: {running_count}/{len(namespaces)} VMs running")
 
     return results
 
@@ -457,16 +570,20 @@ def main():
             logger.info("Creating VMs without node selector (will be distributed)")
             create_results = create_vms_on_node(namespaces, args.vm_template, None, args.vm_name, logger)
 
-        # Wait for VMs to be running
+        # Wait for VMs to be running (default: 1 hour timeout)
         logger.info("\nWaiting for VMs to reach Running state...")
-        running_results = wait_for_vms_running(namespaces, args.vm_name, 600, logger)
+        running_results = wait_for_vms_running(
+            namespaces, args.vm_name, args.vm_startup_timeout, logger,
+            poll_interval=args.poll_interval
+        )
 
         successful_vms = sum(1 for success in running_results.values() if success)
-        logger.info(f"\nVMs running: {successful_vms}/{len(namespaces)}")
 
         if successful_vms == 0:
             logger.error("No VMs are running. Cannot proceed with migration.")
             sys.exit(1)
+        elif successful_vms < len(namespaces):
+            logger.warning(f"Only {successful_vms}/{len(namespaces)} VMs are running. Proceeding with available VMs.")
 
         # Remove nodeSelectors to allow migration
         if creation_node:
@@ -760,23 +877,57 @@ def main():
         logger.info("=" * 80)
 
         logger.info(f"\nTesting network connectivity for {len(namespaces)} VMs...")
+        logger.info(f"Timeout: {args.ping_timeout}s (will poll until all VMs respond or timeout)")
 
-        ping_results = {}
-        for ns in namespaces:
-            vm_ip = get_vmi_ip(args.vm_name, ns, logger)
-            if vm_ip:
-                ping_success = ping_vm(vm_ip, args.ssh_pod, args.ssh_pod_ns, logger)
-                ping_results[ns] = ping_success
-                if ping_success:
-                    logger.info(f"[{ns}] Ping successful to {vm_ip}")
+        # Track which VMs still need ping validation
+        pending = set(namespaces)
+        ping_results = {ns: False for ns in namespaces}
+        vm_ips = {}  # Cache VM IPs
+        start_time = time.time()
+        poll_interval = 10  # Check every 10 seconds
+
+        while pending and (time.time() - start_time) < args.ping_timeout:
+            elapsed = time.time() - start_time
+            still_pending = set()
+
+            for ns in pending:
+                # Get VM IP (may not be available immediately after migration)
+                if ns not in vm_ips or vm_ips[ns] is None:
+                    vm_ips[ns] = get_vmi_ip(args.vm_name, ns, logger)
+
+                vm_ip = vm_ips[ns]
+                if vm_ip:
+                    ping_success = ping_vm(vm_ip, args.ssh_pod, args.ssh_pod_ns, logger)
+                    if ping_success:
+                        logger.info(f"[{ns}] Ping successful to {vm_ip}")
+                        ping_results[ns] = True
+                    else:
+                        # Keep trying
+                        still_pending.add(ns)
                 else:
-                    logger.warning(f"[{ns}] Ping failed to {vm_ip}")
-            else:
-                logger.warning(f"[{ns}] Could not get VM IP")
-                ping_results[ns] = False
+                    # No IP yet, keep trying
+                    still_pending.add(ns)
+
+            pending = still_pending
+
+            if pending:
+                successful_count = sum(1 for v in ping_results.values() if v)
+                remaining_time = args.ping_timeout - elapsed
+                logger.info(f"Ping status: {successful_count}/{len(namespaces)} successful | "
+                           f"Pending: {len(pending)} | "
+                           f"Elapsed: {elapsed:.0f}s | "
+                           f"Remaining: {remaining_time:.0f}s")
+                time.sleep(poll_interval)
+
+        # Final status for any remaining pending VMs
+        if pending:
+            logger.warning(f"\nTimeout reached. {len(pending)} VMs did not respond to ping:")
+            for ns in pending:
+                vm_ip = vm_ips.get(ns, "No IP")
+                logger.warning(f"  [{ns}] IP: {vm_ip}")
 
         successful_pings = sum(1 for success in ping_results.values() if success)
-        logger.info(f"\nPing successful: {successful_pings}/{len(namespaces)}")
+        logger.info(f"\nNetwork validation complete: {successful_pings}/{len(namespaces)} VMs reachable")
 
     # Phase 5: Display Results
     logger.info("\n" + "=" * 80)
