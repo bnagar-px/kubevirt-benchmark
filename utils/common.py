@@ -1881,9 +1881,12 @@ def save_migration_results(args, results, base_dir="results", logger=None, total
     return json_path, csv_path, summary_json_path, summary_csv_path, output_dir
 
 
-def save_capacity_results(results: dict, base_dir: str = "results", logger=None) -> str:
+def save_capacity_results(results: dict, base_dir: str = "results", storage_version: str = None, logger=None) -> str:
     """
     Save capacity benchmark results to JSON and CSV files.
+
+    Directory structure follows the same pattern as other tests:
+        results/{storage_version}/{num_disks}-disk/{timestamp}_capacity_benchmark_{total_vms}vms/
 
     Args:
         results: Dictionary containing capacity benchmark results with keys:
@@ -1901,6 +1904,7 @@ def save_capacity_results(results: dict, base_dir: str = "results", logger=None)
             - end_reason: Reason for test ending
             - phases_skipped: List of skipped phases
         base_dir: Base directory for results (default: "results")
+        storage_version: Storage version for folder hierarchy (e.g., "3.2.0"). If None, uses "default"
         logger: Logger instance (optional)
 
     Returns:
@@ -1908,10 +1912,21 @@ def save_capacity_results(results: dict, base_dir: str = "results", logger=None)
     """
     from datetime import datetime
 
-    # Create timestamped output directory
+    # Create timestamped output directory following the standard structure:
+    # results/{storage_version}/{num_disks}-disk/{timestamp}_capacity_benchmark_{total_vms}vms/
     timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
     total_vms = results.get('total_vms', 0)
-    output_dir = os.path.join(base_dir, f"{timestamp}_capacity_benchmark_{total_vms}vms")
+
+    # Calculate total disks per VM (data volumes + 1 root volume)
+    data_volumes_per_vm = results.get('data_volumes_per_vm', 0)
+    num_disks = data_volumes_per_vm + 1  # +1 for root volume
+
+    # Build directory path
+    version_dir = storage_version if storage_version else "default"
+    disk_dir = f"{num_disks}-disk"
+    run_dir = f"{timestamp}_capacity_benchmark_{total_vms}vms"
+
+    output_dir = os.path.join(base_dir, version_dir, disk_dir, run_dir)
     os.makedirs(output_dir, exist_ok=True)
 
     if logger:

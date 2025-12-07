@@ -132,6 +132,8 @@ Examples:
                         help='Save results to JSON/CSV files in results directory')
     parser.add_argument('--results-dir', type=str, default='results',
                         help='Directory to save results (default: results)')
+    parser.add_argument('--storage-version', type=str, default=None,
+                        help='Storage version for results folder hierarchy (e.g., 3.2.0)')
 
     # Logging
     parser.add_argument('--log-file', type=str,
@@ -837,7 +839,12 @@ def main():
     # Save results if requested
     if args.save_results:
         try:
-            output_dir = save_capacity_results(results, base_dir=args.results_dir, logger=logger)
+            output_dir = save_capacity_results(
+                results,
+                base_dir=args.results_dir,
+                storage_version=args.storage_version,
+                logger=logger
+            )
             logger.info(f"{Colors.OKGREEN}Results saved to: {output_dir}{Colors.ENDC}")
         except Exception as e:
             logger.error(f"Failed to save results: {e}")

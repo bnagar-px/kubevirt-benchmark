@@ -42,6 +42,7 @@ console = Console()
 @click.option('--cleanup-only', is_flag=True, help='Only cleanup resources from previous runs')
 @click.option('--save-results', is_flag=True, help='Save results to JSON/CSV files in results directory')
 @click.option('--results-dir', default='results', help='Directory to save results (default: results)')
+@click.option('--storage-version', default=None, help='Storage version for results folder hierarchy (e.g., 3.2.0)')
 @click.option('--log-file', type=click.Path(), help='Log file path (auto-generated if not specified)')
 @click.option('--log-level', default='INFO', type=click.Choice(['DEBUG', 'INFO', 'WARNING', 'ERROR']),
               help='Logging level')
@@ -66,6 +67,9 @@ def capacity_benchmark(ctx, **kwargs):
 
       # Save results to files
       virtbench capacity-benchmark --storage-class YOUR-STORAGE-CLASS --vms 5 --save-results
+
+      # Save results with storage version for folder hierarchy
+      virtbench capacity-benchmark --storage-class YOUR-STORAGE-CLASS --vms 5 --save-results --storage-version 3.2.0
 
       # Cleanup only mode
       virtbench capacity-benchmark --cleanup-only
@@ -166,6 +170,8 @@ def capacity_benchmark(ctx, **kwargs):
     if kwargs['save_results']:
         python_args['save-results'] = True
         python_args['results-dir'] = kwargs['results_dir']
+        if kwargs.get('storage_version'):
+            python_args['storage-version'] = kwargs['storage_version']
 
     # Add log-file (prefer subcommand option, then global context, then auto-generate)
     if kwargs.get('log_file'):

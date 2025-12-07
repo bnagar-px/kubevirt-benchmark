@@ -935,7 +935,15 @@ virtbench capacity-benchmark \
   --vms 5 \
   --save-results
 
-# Results will be saved to: results/{timestamp}_capacity_benchmark_{total_vms}vms/
+# Save results with storage version for dashboard organization
+virtbench capacity-benchmark \
+  --storage-class YOUR-STORAGE-CLASS \
+  --vms 5 \
+  --save-results \
+  --storage-version 3.2.0
+
+# Results will be saved to: results/{storage-version}/{num-disks}-disk/{timestamp}_capacity_benchmark_{total_vms}vms/
+# Example: results/3.2.0/10-disk/20251207-083451_capacity_benchmark_22vms/
 # Files created:
 #   - capacity_benchmark_results.json (detailed results)
 #   - summary_capacity_benchmark.json (summary for dashboard)
@@ -948,7 +956,8 @@ cd capacity-benchmark
 python3 measure-capacity.py \
   --storage-class YOUR-STORAGE-CLASS \
   --vms 5 \
-  --save-results
+  --save-results \
+  --storage-version 3.2.0
 ```
 
 **Cleanup:**
@@ -1552,6 +1561,12 @@ kubectl get storageclass
 |--------|---------|-------------|
 | `--save-results` | `false` | Save results to JSON/CSV files |
 | `--results-dir` | `results` | Directory to save results |
+| `--storage-version` | `default` | Storage version for folder hierarchy (e.g., 3.2.0) |
+
+Results are saved in the standard folder structure:
+```
+results/{storage-version}/{num-disks}-disk/{timestamp}_capacity_benchmark_{total_vms}vms/
+```
 
 #### Logging Options
 
