@@ -11,7 +11,6 @@ Each loop iteration performs:
 2. Resize root and data volumes
 3. Restart VMs
 4. Snapshot VMs
-5. Migrate VMs
 
 Usage:
     python3 measure-capacity.py --storage-class YOUR-STORAGE-CLASS --vms 5 --data-volume-count 3
@@ -33,8 +32,7 @@ from utils.common import (
     setup_logging, run_kubectl_command, create_namespace, namespace_exists,
     get_vm_status, restart_vm, resize_pvc, wait_for_pvc_resize,
     create_vm_snapshot, wait_for_snapshot_ready, delete_vm_snapshot,
-    get_pvc_size, get_vm_volume_names, migrate_vm, wait_for_migration_complete,
-    Colors
+    get_pvc_size, get_vm_volume_names, Colors, save_capacity_results
 )
 
 # Default configuration
@@ -66,7 +64,7 @@ Examples:
   python3 measure-capacity.py --storage-class YOUR-STORAGE-CLASS --max-iterations 10
 
   # Skip specific jobs
-  python3 measure-capacity.py --storage-class YOUR-STORAGE-CLASS --skip-resize-job --skip-migration-job
+  python3 measure-capacity.py --storage-class YOUR-STORAGE-CLASS --skip-resize-job --skip-snapshot-job
 
   # Cleanup only mode
   python3 measure-capacity.py --cleanup-only
@@ -108,8 +106,6 @@ Examples:
     # Skip options
     parser.add_argument('--skip-resize-job', action='store_true',
                         help='Skip volume resize job')
-    parser.add_argument('--skip-migration-job', action='store_true',
-                        help='Skip migration job')
     parser.add_argument('--skip-snapshot-job', action='store_true',
                         help='Skip snapshot job')
     parser.add_argument('--skip-restart-job', action='store_true',
@@ -122,12 +118,20 @@ Examples:
                         help=f'Polling interval in seconds (default: {DEFAULT_POLL_INTERVAL})')
     parser.add_argument('--scheduling-timeout', type=int, default=120,
                         help='Seconds to wait in Scheduling state before declaring capacity reached (default: 120)')
+    parser.add_argument('--max-create-retries', type=int, default=5,
+                        help='Maximum retries for VM creation on transient errors (default: 5)')
 
     # Cleanup options
     parser.add_argument('--cleanup', action='store_true',
                         help='Cleanup resources after test completion')
     parser.add_argument('--cleanup-only', action='store_true',
                         help='Only cleanup resources from previous runs')
+
+    # Results options
+    parser.add_argument('--save-results', action='store_true',
+                        help='Save results to JSON/CSV files in results directory')
+    parser.add_argument('--results-dir', type=str, default='results',
+                        help='Directory to save results (default: results)')
 
     # Logging
     parser.add_argument('--log-file', type=str,
@@ -195,9 +199,10 @@ def get_storage_classes(storage_class_arg: str) -> List[str]:
 
 
 def create_vm_with_data_volumes(vm_name: str, namespace: str, vm_yaml: str, storage_class: str,
-                                 data_volume_count: int, vol_size: str, args, logger) -> bool:
+                                 data_volume_count: int, vol_size: str, args, logger,
+                                 max_retries: int = 5, initial_delay: float = 2.0) -> bool:
     """
-    Create a VM with multiple data volumes.
+    Create a VM with multiple data volumes, with retry logic for transient errors.
 
     Args:
         vm_name: VM name
@@ -208,14 +213,32 @@ def create_vm_with_data_volumes(vm_name: str, namespace: str, vm_yaml: str, stor
         vol_size: Volume size
         args: Command line arguments
         logger: Logger instance
+        max_retries: Maximum number of retry attempts (default: 5)
+        initial_delay: Initial delay between retries in seconds (default: 2.0)
+                      Uses exponential backoff: delay * 2^attempt
 
     Returns:
         True if successful, False otherwise
     """
-    try:
-        logger.info(f"Creating VM {vm_name} with {data_volume_count} data volumes")
+    # Retryable errors - transient webhook/API server issues
+    retryable_errors = [
+        'context deadline exceeded',
+        'connection refused',
+        'connection reset',
+        'timeout',
+        'Internal error occurred',
+        'webhook',
+        'etcdserver: request timed out',
+        'the object has been modified',
+        'Operation cannot be fulfilled',
+        'TLS handshake timeout',
+        'i/o timeout',
+    ]
 
-        # Read and customize VM template
+    logger.info(f"Creating VM {vm_name} with {data_volume_count} data volumes")
+
+    # Read and customize VM template (do this once, outside retry loop)
+    try:
         with open(vm_yaml, 'r') as f:
             vm_content = f.read()
 
@@ -252,31 +275,62 @@ def create_vm_with_data_volumes(vm_name: str, namespace: str, vm_yaml: str, stor
                 )
             # Also replace storage class placeholder if present
             vm_content = vm_content.replace('{{STORAGE_CLASS_NAME}}', storage_class)
-
-        # TODO: Add data volumes to the template
-        # For now, create VM with root volume only
-
-        # Apply VM
-        import subprocess
-        process = subprocess.Popen(
-            ['kubectl', 'create', '-f', '-', '-n', namespace],
-            stdin=subprocess.PIPE,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True
-        )
-        stdout, stderr = process.communicate(input=vm_content)
-
-        if process.returncode != 0:
-            logger.error(f"Failed to create VM {vm_name}: {stderr}")
-            return False
-
-        logger.info(f"VM {vm_name} created successfully")
-        return True
-
     except Exception as e:
-        logger.error(f"Failed to create VM {vm_name}: {e}")
+        logger.error(f"Failed to prepare VM template for {vm_name}: {e}")
         return False
+
+    # TODO: Add data volumes to the template
+    # For now, create VM with root volume only
+
+    # Retry loop for VM creation
+    last_error = None
+    for attempt in range(1, max_retries + 1):
+        try:
+            import subprocess
+            process = subprocess.Popen(
+                ['kubectl', 'create', '-f', '-', '-n', namespace],
+                stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True
+            )
+            stdout, stderr = process.communicate(input=vm_content)
+
+            if process.returncode == 0:
+                logger.info(f"VM {vm_name} created successfully")
+                return True
+
+            # Check if error is retryable
+            error_msg = stderr.strip()
+            last_error = error_msg
+            is_retryable = any(err.lower() in error_msg.lower() for err in retryable_errors)
+
+            if is_retryable and attempt < max_retries:
+                delay = initial_delay * (2 ** (attempt - 1))  # Exponential backoff
+                logger.warning(f"Retryable error creating VM {vm_name} (attempt {attempt}/{max_retries}): {error_msg}")
+                logger.info(f"Retrying in {delay:.1f}s...")
+                time.sleep(delay)
+            elif is_retryable:
+                logger.error(f"Failed to create VM {vm_name} after {max_retries} attempts: {error_msg}")
+                return False
+            else:
+                # Non-retryable error, fail immediately
+                logger.error(f"Failed to create VM {vm_name}: {error_msg}")
+                return False
+
+        except Exception as e:
+            last_error = str(e)
+            if attempt < max_retries:
+                delay = initial_delay * (2 ** (attempt - 1))
+                logger.warning(f"Exception creating VM {vm_name} (attempt {attempt}/{max_retries}): {e}")
+                logger.info(f"Retrying in {delay:.1f}s...")
+                time.sleep(delay)
+            else:
+                logger.error(f"Failed to create VM {vm_name} after {max_retries} attempts: {e}")
+                return False
+
+    logger.error(f"Failed to create VM {vm_name}: {last_error}")
+    return False
 
 
 def wait_for_vm_running(vm_name: str, namespace: str, logger, timeout: int = 1800,
@@ -412,9 +466,11 @@ def run_iteration(iteration: int, namespace: str, storage_class: str, args, logg
     phase_start = time.time()
 
     created_vms = []
+    max_create_retries = getattr(args, 'max_create_retries', 5)
     for vm_name in vm_names:
         if create_vm_with_data_volumes(vm_name, namespace, args.vm_yaml, storage_class,
-                                       args.data_volume_count, args.min_vol_size, args, logger):
+                                       args.data_volume_count, args.min_vol_size, args, logger,
+                                       max_retries=max_create_retries):
             created_vms.append(vm_name)
         else:
             logger.error(f"Failed to create VM {vm_name}")
@@ -542,34 +598,6 @@ def run_iteration(iteration: int, namespace: str, storage_class: str, args, logg
     else:
         logger.info(f"\n{Colors.WARNING}Phase 4: SKIPPED (--skip-snapshot-job){Colors.ENDC}")
 
-    # Phase 5: Migrate VMs
-    if not args.skip_migration_job:
-        logger.info(f"\n{Colors.HEADER}Phase 5: Migrating VMs{Colors.ENDC}")
-        phase_start = time.time()
-
-        migration_failed = False
-        for vm_name in successful_vms:
-            logger.info(f"Migrating VM {vm_name}...")
-
-            if not migrate_vm(vm_name, namespace, logger):
-                logger.error(f"Failed to initiate migration for VM {vm_name}")
-                migration_failed = True
-                break
-
-            if not wait_for_migration_complete(vm_name, namespace, logger=logger):
-                logger.error(f"Migration failed for VM {vm_name}")
-                migration_failed = True
-                break
-
-        if migration_failed:
-            logger.error("Phase 5 FAILED: Migration failed")
-            return False, False, len(successful_vms)
-
-        phase_duration = time.time() - phase_start
-        logger.info(f"{Colors.OKGREEN}Phase 5 COMPLETE: All VMs migrated (took {phase_duration:.2f}s){Colors.ENDC}")
-    else:
-        logger.info(f"\n{Colors.WARNING}Phase 5: SKIPPED (--skip-migration-job){Colors.ENDC}")
-
     logger.info(f"\n{Colors.OKGREEN}{Colors.BOLD}ITERATION {iteration} COMPLETE{Colors.ENDC}")
     return True, False, len(successful_vms)
 
@@ -671,8 +699,6 @@ def print_test_summary(results: dict, logger):
         phases_run.append('Restart VMs')
     if 'snapshot' not in phases_skipped:
         phases_run.append('Create Snapshots')
-    if 'migration' not in phases_skipped:
-        phases_run.append('Migrate VMs')
 
     logger.info(f"\n{Colors.HEADER}Phases Executed:{Colors.ENDC}")
     for phase in phases_run:
@@ -788,8 +814,6 @@ def main():
         phases_skipped.append('restart')
     if args.skip_snapshot_job:
         phases_skipped.append('snapshot')
-    if args.skip_migration_job:
-        phases_skipped.append('migration')
 
     results = {
         'storage_classes': ', '.join(storage_classes),
@@ -809,6 +833,16 @@ def main():
 
     # Print summary report
     print_test_summary(results, logger)
+
+    # Save results if requested
+    if args.save_results:
+        try:
+            output_dir = save_capacity_results(results, base_dir=args.results_dir, logger=logger)
+            logger.info(f"{Colors.OKGREEN}Results saved to: {output_dir}{Colors.ENDC}")
+        except Exception as e:
+            logger.error(f"Failed to save results: {e}")
+    else:
+        logger.info("Results not saved (use --save-results to enable)")
 
     # Cleanup if requested
     if args.cleanup:

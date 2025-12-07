@@ -1367,7 +1367,14 @@ def wait_for_migration_complete(vm_name: str, namespace: str, timeout: int = 600
 
             return True, observed_duration, current_node, vmim_duration
 
-        # Check migration status
+        # Check VMIM phase directly (more reliable than VMI migration state)
+        start_ts, end_ts, vmim_phase = get_vmim_timestamps(vm_name, namespace, logger)
+        if vmim_phase and vmim_phase.lower() == "failed":
+            if logger:
+                logger.error(f"[{namespace}] VMIM phase is Failed for VM {vm_name}")
+            return False, time.time() - start_time, None, None
+
+        # Also check VMI migration state as fallback
         status = get_migration_status(vm_name, namespace, logger)
         if status == "Failed":
             if logger:
@@ -1872,6 +1879,182 @@ def save_migration_results(args, results, base_dir="results", logger=None, total
         logger.info(f"Saved summary migration results to {summary_json_path}")
 
     return json_path, csv_path, summary_json_path, summary_csv_path, output_dir
+
+
+def save_capacity_results(results: dict, base_dir: str = "results", logger=None) -> str:
+    """
+    Save capacity benchmark results to JSON and CSV files.
+
+    Args:
+        results: Dictionary containing capacity benchmark results with keys:
+            - storage_classes: Storage class(es) used
+            - vms_per_iteration: VMs created per iteration
+            - data_volumes_per_vm: Data volumes per VM
+            - volume_size: Volume size
+            - vm_memory: VM memory
+            - vm_cpu_cores: VM CPU cores
+            - iterations_completed: Number of iterations completed
+            - total_vms: Total VMs created
+            - total_pvcs: Total PVCs created
+            - duration_str: Human-readable duration
+            - capacity_reached: Whether capacity limit was reached
+            - end_reason: Reason for test ending
+            - phases_skipped: List of skipped phases
+        base_dir: Base directory for results (default: "results")
+        logger: Logger instance (optional)
+
+    Returns:
+        Path to the output directory
+    """
+    from datetime import datetime
+
+    # Create timestamped output directory
+    timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+    total_vms = results.get('total_vms', 0)
+    output_dir = os.path.join(base_dir, f"{timestamp}_capacity_benchmark_{total_vms}vms")
+    os.makedirs(output_dir, exist_ok=True)
+
+    if logger:
+        logger.info(f"Saving capacity benchmark results to: {output_dir}")
+
+    # File paths
+    json_path = os.path.join(output_dir, "capacity_benchmark_results.json")
+    summary_json_path = os.path.join(output_dir, "summary_capacity_benchmark.json")
+    csv_path = os.path.join(output_dir, "capacity_benchmark_results.csv")
+
+    # Build detailed results JSON
+    detailed_results = {
+        "test_type": "capacity_benchmark",
+        "timestamp": timestamp,
+        "config": {
+            "storage_classes": results.get('storage_classes', 'N/A'),
+            "vms_per_iteration": results.get('vms_per_iteration', 0),
+            "data_volumes_per_vm": results.get('data_volumes_per_vm', 0),
+            "volume_size": results.get('volume_size', 'N/A'),
+            "vm_memory": results.get('vm_memory', 'N/A'),
+            "vm_cpu_cores": results.get('vm_cpu_cores', 0),
+        },
+        "results": {
+            "iterations_completed": results.get('iterations_completed', 0),
+            "total_vms": results.get('total_vms', 0),
+            "total_pvcs": results.get('total_pvcs', 0),
+            "capacity_reached": results.get('capacity_reached', False),
+            "end_reason": results.get('end_reason', 'unknown'),
+        },
+        "phases_skipped": results.get('phases_skipped', []),
+        "duration": results.get('duration_str', 'N/A'),
+    }
+
+    # Save detailed JSON
+    with open(json_path, "w") as f:
+        json.dump(detailed_results, f, indent=4)
+    if logger:
+        logger.info(f"Saved detailed results to {json_path}")
+
+    # Build summary JSON (compatible with dashboard format)
+    # Extract duration in seconds from duration_str (format: "123.45s (2.06 minutes)")
+    duration_sec = None
+    duration_str = results.get('duration_str', '')
+    if duration_str and 's' in duration_str:
+        try:
+            duration_sec = float(duration_str.split('s')[0])
+        except (ValueError, IndexError):
+            pass
+
+    summary = {
+        "test_type": "capacity_benchmark",
+        "total_vms": results.get('total_vms', 0),
+        "total_pvcs": results.get('total_pvcs', 0),
+        "iterations_completed": results.get('iterations_completed', 0),
+        "capacity_reached": results.get('capacity_reached', False),
+        "total_test_duration_sec": duration_sec,
+        "metrics": [
+            {
+                "metric": "vms_per_iteration",
+                "value": results.get('vms_per_iteration', 0),
+            },
+            {
+                "metric": "data_volumes_per_vm",
+                "value": results.get('data_volumes_per_vm', 0),
+            },
+            {
+                "metric": "total_iterations",
+                "value": results.get('iterations_completed', 0),
+            },
+        ],
+    }
+
+    # Save summary JSON
+    with open(summary_json_path, "w") as f:
+        json.dump(summary, f, indent=4)
+    if logger:
+        logger.info(f"Saved summary to {summary_json_path}")
+
+    # Save CSV with key metrics
+    csv_data = [
+        {
+            "metric": "Storage Classes",
+            "value": results.get('storage_classes', 'N/A'),
+        },
+        {
+            "metric": "VMs per Iteration",
+            "value": results.get('vms_per_iteration', 0),
+        },
+        {
+            "metric": "Data Volumes per VM",
+            "value": results.get('data_volumes_per_vm', 0),
+        },
+        {
+            "metric": "Volume Size",
+            "value": results.get('volume_size', 'N/A'),
+        },
+        {
+            "metric": "VM Memory",
+            "value": results.get('vm_memory', 'N/A'),
+        },
+        {
+            "metric": "VM CPU Cores",
+            "value": results.get('vm_cpu_cores', 0),
+        },
+        {
+            "metric": "Iterations Completed",
+            "value": results.get('iterations_completed', 0),
+        },
+        {
+            "metric": "Total VMs Created",
+            "value": results.get('total_vms', 0),
+        },
+        {
+            "metric": "Total PVCs Created",
+            "value": results.get('total_pvcs', 0),
+        },
+        {
+            "metric": "Capacity Reached",
+            "value": "Yes" if results.get('capacity_reached', False) else "No",
+        },
+        {
+            "metric": "End Reason",
+            "value": results.get('end_reason', 'unknown'),
+        },
+        {
+            "metric": "Test Duration",
+            "value": results.get('duration_str', 'N/A'),
+        },
+        {
+            "metric": "Phases Skipped",
+            "value": ", ".join(results.get('phases_skipped', [])) or "None",
+        },
+    ]
+
+    with open(csv_path, "w", newline="") as f:
+        writer = csv.DictWriter(f, fieldnames=["metric", "value"])
+        writer.writeheader()
+        writer.writerows(csv_data)
+    if logger:
+        logger.info(f"Saved CSV results to {csv_path}")
+
+    return output_dir
+
 
 def validate_prerequisites(ssh_pod: str, ssh_pod_ns: str, logger: logging.Logger) -> bool:
     """

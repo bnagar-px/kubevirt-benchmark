@@ -204,14 +204,26 @@ def df_to_html_table(df: pd.DataFrame, table_id: str) -> str:
     )
 
 def get_vm_count_from_folder(folder_name: str) -> int:
-    """Extract VM count from folder suffix."""
+    """Extract VM count from folder suffix.
+
+    Handles formats:
+    - 20251014-165952_kubevirt-perf-test_1-50 → 50 VMs
+    - 20251207-123456_capacity_benchmark_15vms → 15 VMs
+    """
     try:
         vm_range = folder_name.split("_")[-1]
+
+        # Handle capacity benchmark format: "15vms"
+        if vm_range.endswith("vms"):
+            return int(vm_range[:-3])
+
+        # Handle range format: "1-50"
         if "-" in vm_range:
             start_str, end_str = vm_range.split("-")
             start = int(start_str)
             end = int(end_str)
             return (end - start) + 1
+
         return int(vm_range)
     except Exception:
         return 0
@@ -385,10 +397,108 @@ def build_migration_content(folder: Path, uid: str) -> str:
     """
 
 
+def build_capacity_content(folder: Path, uid: str) -> str:
+    """Capacity Benchmark section."""
+    capacity_summary = load_json(folder / "summary_capacity_benchmark.json")
+    capacity_results = load_json(folder / "capacity_benchmark_results.json")
+
+    if not capacity_summary and not capacity_results:
+        return "<p>No capacity benchmark data found.</p>"
+
+    # Build header info
+    total_vms = capacity_summary.get("total_vms", 0) if capacity_summary else 0
+    total_pvcs = capacity_summary.get("total_pvcs", 0) if capacity_summary else 0
+    iterations = capacity_summary.get("iterations_completed", 0) if capacity_summary else 0
+    capacity_reached = capacity_summary.get("capacity_reached", False) if capacity_summary else False
+    total_time = capacity_summary.get("total_test_duration_sec") if capacity_summary else None
+
+    # Get config from detailed results
+    config = capacity_results.get("config", {}) if capacity_results else {}
+    results_data = capacity_results.get("results", {}) if capacity_results else {}
+
+    header_html = f"""
+    <h6><strong>Results Directory:</strong> {folder.name}</h6>
+    <h6><strong>Storage Class(es):</strong> {config.get('storage_classes', 'N/A')}</h6>
+    <h6><strong>Total VMs Created:</strong> {total_vms}</h6>
+    <h6><strong>Total PVCs Created:</strong> {total_pvcs}</h6>
+    <h6><strong>Iterations Completed:</strong> {iterations}</h6>
+    {f"<h6><strong>Total Test Duration:</strong> {total_time:.2f} s</h6>" if total_time else ""}
+    """
+
+    # Capacity status
+    if capacity_reached:
+        status_html = '<span class="badge bg-success">Capacity Reached</span>'
+    else:
+        end_reason = results_data.get("end_reason", "unknown")
+        if end_reason == "max_iterations":
+            status_html = '<span class="badge bg-warning text-dark">Max Iterations Reached</span>'
+        elif end_reason == "interrupted":
+            status_html = '<span class="badge bg-secondary">Interrupted</span>'
+        elif end_reason == "error":
+            status_html = '<span class="badge bg-danger">Error</span>'
+        else:
+            status_html = f'<span class="badge bg-info">{end_reason}</span>'
+
+    # Build config table
+    config_rows = ""
+    config_items = [
+        ("VMs per Iteration", config.get("vms_per_iteration", "N/A")),
+        ("Data Volumes per VM", config.get("data_volumes_per_vm", "N/A")),
+        ("Volume Size", config.get("volume_size", "N/A")),
+        ("VM Memory", config.get("vm_memory", "N/A")),
+        ("VM CPU Cores", config.get("vm_cpu_cores", "N/A")),
+    ]
+    for label, value in config_items:
+        config_rows += f"<tr><th>{label}</th><td>{value}</td></tr>"
+
+    config_table = f"""
+    <table class="table table-bordered w-auto">
+      <tbody>{config_rows}</tbody>
+    </table>
+    """
+
+    # Build results table
+    results_rows = ""
+    results_items = [
+        ("Iterations Completed", iterations),
+        ("Total VMs Created", total_vms),
+        ("Total PVCs Created", total_pvcs),
+        ("Capacity Reached", "Yes" if capacity_reached else "No"),
+        ("End Reason", results_data.get("end_reason", "N/A")),
+    ]
+    for label, value in results_items:
+        results_rows += f"<tr><th>{label}</th><td>{value}</td></tr>"
+
+    results_table = f"""
+    <table class="table table-bordered w-auto">
+      <tbody>{results_rows}</tbody>
+    </table>
+    """
+
+    # Phases skipped
+    phases_skipped = capacity_results.get("phases_skipped", []) if capacity_results else []
+    phases_html = ", ".join(phases_skipped) if phases_skipped else "None"
+
+    return f"""
+    <div class="mb-4">
+      {header_html}
+      <p><strong>Status:</strong> {status_html}</p>
+
+      <h4 class="mt-4">Test Configuration</h4>
+      {config_table}
+
+      <h4 class="mt-4">Test Results</h4>
+      {results_table}
+
+      <p><strong>Phases Skipped:</strong> {phases_html}</p>
+    </div>
+    """
+
+
 # ---------------- Disk and PX Builders ----------------
 def build_disk_tab(px_version: str, disk_name: str, folders: list) -> str:
     """Disk-level tab with charts and nested VM-size tabs."""
-    creation_rec, boot_rec, mig_rec = [], [], []
+    creation_rec, boot_rec, mig_rec, cap_rec = [], [], [], []
     by_vms = defaultdict(list)
 
     for folder in sorted(folders, key=lambda p: p.name):
@@ -397,6 +507,7 @@ def build_disk_tab(px_version: str, disk_name: str, folders: list) -> str:
         csum = load_json(folder / "summary_vm_creation_results.json")
         bsum = load_json(folder / "summary_boot_storm_results.json")
         msum = load_json(folder / "summary_migration_results.json")
+        capsum = load_json(folder / "summary_capacity_benchmark.json")
         if csum and csum.get("total_test_duration_sec"):
             creation_rec.append({"VMs": csum.get("total_vms", vms), "Seconds": csum["total_test_duration_sec"], "Folder": folder.name})
         if bsum and bsum.get("total_test_duration_sec"):
@@ -404,13 +515,22 @@ def build_disk_tab(px_version: str, disk_name: str, folders: list) -> str:
         if msum and (msum.get("total_migration_duration_sec") or msum.get("total_test_duration_sec")):
             total = msum.get("total_migration_duration_sec") or msum.get("total_test_duration_sec")
             mig_rec.append({"VMs": msum.get("total_vms", vms), "Seconds": total, "Folder": folder.name})
+        if capsum and capsum.get("total_test_duration_sec"):
+            cap_rec.append({"VMs": capsum.get("total_vms", vms), "Seconds": capsum["total_test_duration_sec"], "Folder": folder.name})
+
+    # Build charts - include capacity chart only if we have data
+    chart_items = [
+        build_bar_chart_mmss(creation_rec, "Creation Duration", "rgb(26,118,255)", f"chart_{px_version}_{disk_name}_creation"),
+        build_bar_chart_mmss(boot_rec, "Boot Storm Duration", "rgb(0,204,150)", f"chart_{px_version}_{disk_name}_boot"),
+        build_bar_chart_mmss(mig_rec, "Live Migration Duration", "rgb(255,99,71)", f"chart_{px_version}_{disk_name}_mig"),
+    ]
+    if cap_rec:
+        chart_items.append(build_bar_chart_mmss(cap_rec, "Capacity Benchmark Duration", "rgb(153,102,255)", f"chart_{px_version}_{disk_name}_cap"))
 
     charts_html = f"""
     <div class="container-fluid mt-3">
       <div class="row g-3">
-        {build_bar_chart_mmss(creation_rec, "Creation Duration", "rgb(26,118,255)", f"chart_{px_version}_{disk_name}_creation")}
-        {build_bar_chart_mmss(boot_rec, "Boot Storm Duration", "rgb(0,204,150)", f"chart_{px_version}_{disk_name}_boot")}
-        {build_bar_chart_mmss(mig_rec, "Live Migration Duration", "rgb(255,99,71)", f"chart_{px_version}_{disk_name}_mig")}
+        {''.join(chart_items)}
       </div>
       <hr>
     </div>
@@ -441,16 +561,40 @@ def build_disk_tab(px_version: str, disk_name: str, folders: list) -> str:
             for f in by_vms[vm_count] if (f / "summary_migration_results.json").exists()
         ) or "<p>No Live Migration data for this VM size.</p>"
 
+        cap_sections = "".join(
+            build_capacity_content(f, uid=f"{px_version}_{disk_name}_{vm_count}_{f.name}".replace(".", "_").replace("-", "_"))
+            for f in by_vms[vm_count] if (f / "summary_capacity_benchmark.json").exists()
+        ) or "<p>No Capacity Benchmark data for this VM size.</p>"
+
+        # Check if we have capacity data to show the tab
+        has_capacity_data = any((f / "summary_capacity_benchmark.json").exists() for f in by_vms[vm_count])
+
+        # Build tab navigation - include capacity tab only if data exists
+        tab_nav_items = [
+            f'<li class="nav-item"><button class="nav-link active" id="tab-{vm_id}_cb-tab" data-bs-toggle="tab" data-bs-target="#tab_{vm_id}_cb" type="button" role="tab">Creation + Boot Storm</button></li>',
+            f'<li class="nav-item"><button class="nav-link" id="tab-{vm_id}_mig-tab" data-bs-toggle="tab" data-bs-target="#tab_{vm_id}_mig" type="button" role="tab">Live Migration</button></li>',
+        ]
+        tab_content_items = [
+            f'<div class="tab-pane fade show active" id="tab_{vm_id}_cb" role="tabpanel">{cb_sections}</div>',
+            f'<div class="tab-pane fade" id="tab_{vm_id}_mig" role="tabpanel">{mig_sections}</div>',
+        ]
+
+        if has_capacity_data:
+            tab_nav_items.append(
+                f'<li class="nav-item"><button class="nav-link" id="tab-{vm_id}_cap-tab" data-bs-toggle="tab" data-bs-target="#tab_{vm_id}_cap" type="button" role="tab">Capacity Benchmark</button></li>'
+            )
+            tab_content_items.append(
+                f'<div class="tab-pane fade" id="tab_{vm_id}_cap" role="tabpanel">{cap_sections}</div>'
+            )
+
         vm_tabs_body.append(
             f"""
             <div class="tab-pane fade {show_cls} {active_cls}" id="tab_{vm_id}" role="tabpanel">
               <ul class="nav nav-pills mt-2" role="tablist">
-                <li class="nav-item"><button class="nav-link active" id="tab-{vm_id}_cb-tab" data-bs-toggle="tab" data-bs-target="#tab_{vm_id}_cb" type="button" role="tab">Creation + Boot Storm</button></li>
-                <li class="nav-item"><button class="nav-link" id="tab-{vm_id}_mig-tab" data-bs-toggle="tab" data-bs-target="#tab_{vm_id}_mig" type="button" role="tab">Live Migration</button></li>
+                {''.join(tab_nav_items)}
               </ul>
               <div class="tab-content mt-3">
-                <div class="tab-pane fade show active" id="tab_{vm_id}_cb" role="tabpanel">{cb_sections}</div>
-                <div class="tab-pane fade" id="tab_{vm_id}_mig" role="tabpanel">{mig_sections}</div>
+                {''.join(tab_content_items)}
               </div>
             </div>
             """

@@ -8,7 +8,6 @@ import sys
 from pathlib import Path
 from rich.console import Console
 
-from virtbench.utils.yaml_modifier import modify_storage_class
 from virtbench.common import print_banner, build_python_command, generate_log_filename
 
 console = Console()
@@ -31,15 +30,18 @@ console = Console()
 @click.option('--vm-memory', default='2048M', help='VM memory')
 @click.option('--vm-cpu-cores', default=1, type=int, help='VM CPU cores')
 @click.option('--skip-resize-job', is_flag=True, help='Skip volume resize job')
-@click.option('--skip-migration-job', is_flag=True, help='Skip migration job')
 @click.option('--skip-snapshot-job', is_flag=True, help='Skip snapshot job')
 @click.option('--skip-restart-job', is_flag=True, help='Skip restart job')
 @click.option('--concurrency', '-c', default=10, type=int, help='Max parallel threads')
 @click.option('--poll-interval', default=5, type=int, help='Seconds between status checks')
 @click.option('--scheduling-timeout', default=120, type=int,
               help='Seconds to wait in Scheduling state before declaring capacity reached (default: 120)')
+@click.option('--max-create-retries', default=5, type=int,
+              help='Maximum retries for VM creation on transient errors (default: 5)')
 @click.option('--cleanup/--no-cleanup', default=False, help='Delete test resources after completion')
 @click.option('--cleanup-only', is_flag=True, help='Only cleanup resources from previous runs')
+@click.option('--save-results', is_flag=True, help='Save results to JSON/CSV files in results directory')
+@click.option('--results-dir', default='results', help='Directory to save results (default: results)')
 @click.option('--log-file', type=click.Path(), help='Log file path (auto-generated if not specified)')
 @click.option('--log-level', default='INFO', type=click.Choice(['DEBUG', 'INFO', 'WARNING', 'ERROR']),
               help='Logging level')
@@ -60,7 +62,10 @@ def capacity_benchmark(ctx, **kwargs):
       virtbench capacity-benchmark --storage-class YOUR-STORAGE-CLASS --vms 5 --max-iterations 20
 
       # Skip specific jobs
-      virtbench capacity-benchmark --storage-class YOUR-STORAGE-CLASS --skip-resize-job --skip-migration-job
+      virtbench capacity-benchmark --storage-class YOUR-STORAGE-CLASS --skip-resize-job --skip-snapshot-job
+
+      # Save results to files
+      virtbench capacity-benchmark --storage-class YOUR-STORAGE-CLASS --vms 5 --save-results
 
       # Cleanup only mode
       virtbench capacity-benchmark --cleanup-only
@@ -121,13 +126,7 @@ def capacity_benchmark(ctx, **kwargs):
         console.print(f"[red]Error: Template file not found: {template_path}[/red]")
         sys.exit(1)
 
-    # Handle storage class modification
     console.print(f"[cyan]Using storage class: {kwargs['storage_class']}[/cyan]")
-    try:
-        modify_storage_class(template_path, kwargs['storage_class'])
-    except Exception as e:
-        console.print(f"[red]Error modifying storage class: {e}[/red]")
-        sys.exit(1)
 
     # Map CLI args to Python script args
     python_args = {
@@ -147,14 +146,13 @@ def capacity_benchmark(ctx, **kwargs):
         'concurrency': kwargs['concurrency'],
         'poll-interval': kwargs['poll_interval'],
         'scheduling-timeout': kwargs['scheduling_timeout'],
+        'max-create-retries': kwargs['max_create_retries'],
         'log-level': kwargs['log_level'],
     }
 
     # Add skip flags
     if kwargs['skip_resize_job']:
         python_args['skip-resize-job'] = True
-    if kwargs['skip_migration_job']:
-        python_args['skip-migration-job'] = True
     if kwargs['skip_snapshot_job']:
         python_args['skip-snapshot-job'] = True
     if kwargs['skip_restart_job']:
@@ -163,6 +161,11 @@ def capacity_benchmark(ctx, **kwargs):
     # Add cleanup flag
     if kwargs['cleanup']:
         python_args['cleanup'] = True
+
+    # Add save-results flags
+    if kwargs['save_results']:
+        python_args['save-results'] = True
+        python_args['results-dir'] = kwargs['results_dir']
 
     # Add log-file (prefer subcommand option, then global context, then auto-generate)
     if kwargs.get('log_file'):

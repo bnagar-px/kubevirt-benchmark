@@ -241,7 +241,7 @@ virtbench datasource-clone --start 1 --end 10 --storage-class YOUR-STORAGE-CLASS
 virtbench migration --start 1 --end 5 --source-node WORKER-NODE-NAME --save-results
 
 # Capacity benchmark
-virtbench capacity-benchmark --storage-class YOUR-STORAGE-CLASS --vms 5 --max-iterations 3
+virtbench capacity-benchmark --storage-class YOUR-STORAGE-CLASS --vms 5 --max-iterations 3 --save-results
 
 # Failure recovery test
 virtbench failure-recovery --start 1 --end 10 --node-name WORKER-NODE-NAME
@@ -384,7 +384,7 @@ python3 measure-vm-migration-time.py --start 1 --end 5 --source-node WORKER-NODE
 
 # Capacity benchmark
 cd capacity-benchmark
-python3 measure-capacity.py --storage-class YOUR-STORAGE-CLASS --vms 5 --max-iterations 3
+python3 measure-capacity.py --storage-class YOUR-STORAGE-CLASS --vms 5 --max-iterations 3 --save-results
 
 # Failure recovery test
 cd failure-recovery
@@ -923,8 +923,33 @@ python3 measure-capacity.py \
 2. **Phase 2**: Resizes root and data volumes (tests volume expansion)
 3. **Phase 3**: Restarts VMs (tests VM lifecycle)
 4. **Phase 4**: Creates VM snapshots (tests snapshot functionality)
-5. **Phase 5**: Migrates VMs (tests live migration)
-6. Repeats until failure or max iterations reached
+5. Repeats until failure or max iterations reached
+
+#### Save Results to Files
+
+**virtbench CLI:**
+```bash
+# Run capacity test and save results
+virtbench capacity-benchmark \
+  --storage-class YOUR-STORAGE-CLASS \
+  --vms 5 \
+  --save-results
+
+# Results will be saved to: results/{timestamp}_capacity_benchmark_{total_vms}vms/
+# Files created:
+#   - capacity_benchmark_results.json (detailed results)
+#   - summary_capacity_benchmark.json (summary for dashboard)
+#   - capacity_benchmark_results.csv (key metrics)
+```
+
+**Python script:**
+```bash
+cd capacity-benchmark
+python3 measure-capacity.py \
+  --storage-class YOUR-STORAGE-CLASS \
+  --vms 5 \
+  --save-results
+```
 
 **Cleanup:**
 
@@ -1520,6 +1545,13 @@ kubectl get storageclass
 |--------|-------------|
 | `--cleanup` | Cleanup resources after test completion |
 | `--cleanup-only` | Only cleanup resources from previous runs |
+
+#### Results Options
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `--save-results` | `false` | Save results to JSON/CSV files |
+| `--results-dir` | `results` | Directory to save results |
 
 #### Logging Options
 
