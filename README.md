@@ -2017,6 +2017,20 @@ kubevirt-benchmark-suite/
 
 ---
 
+## Maintainers
+
+| Role | GitHub Handle | Responsibilities |
+|------|---------------|------------------|
+| **Owner** | [@dbhatnagar-px](https://github.com/dbhatnagar-px) | Repository maintenance, CI issues, releases |
+| **Owner** | [@nilanto07-px](https://github.com/nilanto07-px) | Repository maintenance, CI issues, releases |
+| **Owner** | [@sayalasomayajula-px](https://github.com/sayalasomayajula-px) | Repository maintenance, CI issues, releases |
+| **Owner** | [@bnagar-px](https://github.com/bnagar-px) | Repository maintenance, CI issues, releases |
+| **Owner** | [@adityadani](https://github.com/adityadani) | Repository maintenance, CI issues, releases |
+
+For questions about this project, please reach out to any of the maintainers above.
+
+---
+
 ## License
 
 This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENSE) file for details.

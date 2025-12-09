@@ -1,0 +1,22 @@
+# CODEOWNERS - Defines code ownership for this repository
+# See: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+# ============================================================================
+# Repository Owners
+# ============================================================================
+# The repository owners are responsible for:
+# - Managing CI issues and maintaining the repository
+# - Creating and maintaining releases with semantic versioning
+# - Reviewing and approving major changes
+#
+# Owners:
+#   - @dbhatnagar-px
+#   - @nilanto07-px
+#   - @sayalasomayajula-px
+#   - @bnagar-px
+#   - @adityadani
+# ============================================================================
+
+# Default owners for everything in the repo
+* @dbhatnagar-px @nilanto07-px @sayalasomayajula-px @bnagar-px @adityadani
+
