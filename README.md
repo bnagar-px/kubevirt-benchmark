@@ -2039,10 +2039,3 @@ This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENS
 
 For issues, questions, or contributions:
 - Open an issue on GitHub
-
-## Acknowledgments
-
-- OpenShift Virtualization Team
-- KubeVirt Community
-- All contributors and users
-
