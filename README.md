@@ -1030,7 +1030,7 @@ virtbench failure-recovery \
   --start 1 \
   --end 60 \
   --node-name worker-node-1 \
-  --vm-name rhel-9-vm \
+  --vm-name debian-vm \
   --far-name my-far-resource \
   --save-results
 ```
