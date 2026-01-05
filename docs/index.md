@@ -1,19 +1,12 @@
 # KubeVirt Performance Benchmarking Suite
 
-[![Documentation](https://img.shields.io/badge/Read-documentation-blue?logo=readthedocs)][docs-module]
-[![Changelog](https://img.shields.io/badge/Changelog-Read-blue)](CHANGELOG.md)
-
 A comprehensive, vendor-neutral performance testing toolkit for KubeVirt virtual machines running on OpenShift Container Platform (OCP) or any Kubernetes distribution with KubeVirt.
-
-## Documentation
-
-For detailed documentation, please refer to the [documentation](https://portworx.github.io/virtbench/) website.
 
 ## Overview
 
 This suite provides automated performance testing tools to measure and validate KubeVirt VM provisioning, boot times, network readiness, and failure recovery scenarios. It's designed for production environments running OpenShift Virtualization or KubeVirt with any CSI-compatible storage backend.
 
-## Features
+## Key Features
 
 - **Unified CLI Interface**: Professional kubectl-like CLI (`virtbench`) with shell completion
 - **VM Creation Performance Testing**: Measure VM provisioning and boot times at scale
@@ -31,31 +24,14 @@ This suite provides automated performance testing tools to measure and validate 
 - **Flexible Configuration**: Command-line arguments for easy customization
 - **Interactive Results Dashboard**: Auto-generate rich HTML dashboards for all test results
 
+## Quick Start
 
+Get started in minutes:
 
-## Maintainers
-
-| Role | GitHub Handle | Responsibilities |
-|------|---------------|------------------|
-| **Owner** | [@dbhatnagar-px](https://github.com/dbhatnagar-px) | Repository maintenance, CI issues, releases |
-| **Owner** | [@nilanto07-px](https://github.com/nilanto07-px) | Repository maintenance, CI issues, releases |
-| **Owner** | [@sayalasomayajula-px](https://github.com/sayalasomayajula-px) | Repository maintenance, CI issues, releases |
-| **Owner** | [@bnagar-px](https://github.com/bnagar-px) | Repository maintenance, CI issues, releases |
-| **Owner** | [@adityadani](https://github.com/adityadani) | Repository maintenance, CI issues, releases |
-
-For questions about this project, please reach out to any of the maintainers above.
-
----
+1. **[User Guide](reference/user-guide/test-scenarios/overview.md)** - Overview of testing scenarios
+2. **[Install virtbench](install.md)** - Set up the virtbench CLI
 
 ## License
 
-This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the Apache License 2.0. See [LICENSE](license.md) for details.
 
-## Support
-
-Use the GitHub [issues][gh-issues] to report bugs or suggest features and enhancements. Issues are
-monitored and prioritized by the maintainers.
-
-
-[docs-module]: https://portworx.github.io/virtbench
-[gh-issues]: https://github.com/portworx/kubevirt-benchmark/issues

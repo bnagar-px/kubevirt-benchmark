@@ -1,0 +1,297 @@
+# Best Practices
+
+This guide provides recommendations for running effective and reliable performance tests with virtbench.
+
+## General Testing Practices
+
+### 1. Start Small, Scale Gradually
+
+- Begin with 5-10 VMs to validate your setup
+- Gradually increase to 50, 100, 200+ VMs
+- Identify bottlenecks at each scale
+- Understand your infrastructure limits before large-scale tests
+
+### 2. Run Multiple Tests
+
+- Run each test at least 3 times for consistency
+- Average results across multiple runs
+- Identify and investigate outliers
+- Account for cluster variability
+
+### 3. Save Results Consistently
+
+Always use `--save-results` to track performance over time:
+
+```bash
+virtbench datasource-clone \
+  --start 1 \
+  --end 50 \
+  --storage-class YOUR-STORAGE-CLASS \
+  --save-results \
+  --storage-version 3.2.0
+```
+
+### 4. Use Meaningful Test Names
+
+Organize results with storage version and configuration details:
+
+```bash
+--storage-version "portworx-3.2.0"
+--storage-version "ceph-rbd-17.2"
+```
+
+### 5. Monitor Cluster Resources
+
+Watch cluster resources during tests:
+
+```bash
+# In a separate terminal
+watch kubectl top nodes
+
+# Check storage backend metrics
+# (specific to your storage solution)
+```
+
+## VM Creation Testing
+
+### 1. Validate Cluster First
+
+Always run cluster validation before testing:
+
+```bash
+virtbench validate-cluster --storage-class YOUR-STORAGE-CLASS
+```
+
+### 2. Use Appropriate Concurrency
+
+- Default concurrency (50) works for most scenarios
+- Increase for large-scale tests (100-200 VMs)
+- Decrease if experiencing resource contention
+
+```bash
+virtbench datasource-clone \
+  --start 1 \
+  --end 200 \
+  --concurrency 200 \
+  --storage-class YOUR-STORAGE-CLASS
+```
+
+### 3. Namespace Batch Creation
+
+Create namespaces in batches for faster setup:
+
+```bash
+virtbench datasource-clone \
+  --start 1 \
+  --end 100 \
+  --namespace-batch-size 50 \
+  --storage-class YOUR-STORAGE-CLASS
+```
+
+### 4. Boot Storm Testing
+
+- Test both single-node and multi-node boot storms
+- Start with smaller VM counts (20-30)
+- Gradually increase to find capacity limits
+- Compare initial creation vs boot storm performance
+
+## Migration Testing
+
+### 1. Verify VMs Before Migration
+
+Ensure VMs are healthy before starting migration tests:
+
+```bash
+# Check VM status
+kubectl get vm -n kubevirt-perf-test-1
+
+# Verify network connectivity
+kubectl exec -it ssh-test-pod -- ping <vm-ip>
+```
+
+### 2. Choose Appropriate Migration Scenario
+
+- **Sequential**: For baseline performance
+- **Parallel**: For stress testing
+- **Evacuation**: For node maintenance scenarios
+- **Round-robin**: For load balancing validation
+
+### 3. Set Realistic Timeouts
+
+Adjust timeouts based on VM size and network:
+
+```bash
+virtbench migration \
+  --start 1 \
+  --end 10 \
+  --migration-timeout 600 \  # 10 minutes for large VMs
+  --source-node worker-1
+```
+
+## Capacity Benchmark Testing
+
+### 1. Understand Your Goals
+
+- **Find Maximum Capacity**: Run without `--max-iterations`
+- **Test Specific Scenarios**: Use `--max-iterations` to limit test duration
+- **Skip Unsupported Features**: Use `--skip-resize-job` or `--skip-snapshot-job` if needed
+
+### 2. Start with Conservative Settings
+
+```bash
+virtbench capacity-benchmark \
+  --storage-class YOUR-STORAGE-CLASS \
+  --vms 5 \
+  --max-iterations 5
+```
+
+### 3. Monitor for Failures
+
+- Watch for resource exhaustion
+- Check storage backend health
+- Monitor node resources
+- Review logs for errors
+
+## Failure Recovery Testing
+
+### 1. Test in Non-Production First
+
+- Validate FAR configuration in test environment
+- Understand recovery behavior before production use
+- Document expected recovery times
+
+### 2. Use Appropriate Timeouts
+
+Set timeouts based on your RTO requirements:
+
+```bash
+virtbench failure-recovery \
+  --start 1 \
+  --end 10 \
+  --recovery-timeout 600  # 10 minutes
+```
+
+### 3. Clean Up FAR Resources
+
+Always clean up FAR resources after testing:
+
+```bash
+virtbench failure-recovery \
+  --start 1 \
+  --end 10 \
+  --cleanup \
+  --cleanup-vms
+```
+
+## Logging and Debugging
+
+### 1. Use Appropriate Log Levels
+
+- **INFO**: Normal operation (default)
+- **DEBUG**: Detailed troubleshooting
+- **WARNING**: Important issues only
+- **ERROR**: Critical errors only
+
+### 2. Save Logs to Files
+
+```bash
+virtbench datasource-clone \
+  --start 1 \
+  --end 50 \
+  --storage-class YOUR-STORAGE-CLASS \
+  --log-file test-$(date +%Y%m%d-%H%M%S).log
+```
+
+### 3. Review Logs After Tests
+
+- Check for errors and warnings
+- Identify performance bottlenecks
+- Validate test completion
+
+## Cleanup Practices
+
+### 1. Always Clean Up After Tests
+
+```bash
+virtbench datasource-clone \
+  --start 1 \
+  --end 50 \
+  --storage-class YOUR-STORAGE-CLASS \
+  --cleanup
+```
+
+### 2. Use Dry Run First
+
+Preview cleanup before executing:
+
+```bash
+virtbench datasource-clone \
+  --start 1 \
+  --end 50 \
+  --storage-class YOUR-STORAGE-CLASS \
+  --dry-run-cleanup
+```
+
+### 3. Clean Up on Failure
+
+Ensure resources are cleaned up even if tests fail:
+
+```bash
+virtbench datasource-clone \
+  --start 1 \
+  --end 50 \
+  --storage-class YOUR-STORAGE-CLASS \
+  --cleanup-on-failure
+```
+
+## Results Management
+
+### 1. Organize Results by Version
+
+Use `--storage-version` to organize results:
+
+```bash
+--storage-version "portworx-3.2.0"
+```
+
+### 2. Generate Dashboards Regularly
+
+Create dashboards after each test run:
+
+```bash
+python3 dashboard/generate_dashboard.py --days 30
+```
+
+### 3. Archive Important Results
+
+- Save dashboard HTML files
+- Keep JSON/CSV results for historical comparison
+- Document test conditions and configurations
+
+## Performance Optimization
+
+### 1. Tune for Your Environment
+
+- Adjust concurrency based on cluster size
+- Optimize namespace batch size
+- Configure appropriate timeouts
+
+### 2. Minimize External Load
+
+- Run tests when cluster is not under load
+- Avoid running multiple tests simultaneously
+- Ensure storage backend is not saturated
+
+### 3. Use Consistent Test Conditions
+
+- Same time of day
+- Same cluster state
+- Same resource availability
+
+## See Also
+
+- [Configuration Options](user-guide/configuration.md) - All available options
+- [Troubleshooting](troubleshooting.md) - Common issues and solutions
+- [Output and Results](user-guide/output-and-results.md) - Understanding test output
+- [Cleanup Guide](user-guide/cleanup-guide.md) - Cleanup procedures
+
