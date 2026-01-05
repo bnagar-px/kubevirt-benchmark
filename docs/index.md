@@ -28,8 +28,8 @@ This suite provides automated performance testing tools to measure and validate 
 
 Get started in minutes:
 
-1. **[User Guide](reference/user-guide/test-scenarios/overview.md)** - Overview of testing scenarios
-2. **[Install virtbench](install.md)** - Set up the virtbench CLI
+1. **[Install virtbench](install.md)** - Set up the virtbench CLI
+2. **[User Guide](reference/user-guide/test-scenarios/overview.md)** - Overview of testing scenarios
 
 ## License
 
