@@ -2,6 +2,13 @@
 
 This guide provides recommendations for running effective and reliable performance tests with virtbench.
 
+> **Important Notice:**
+>
+> - Do not run these benchmarks directly in your production environment without thorough testing first.
+> - Always test in a non-production environment to understand the impact and behavior.
+> - Test results will vary significantly based on your underlying infrastructure, including hardware specifications, storage backend, network configuration, and cluster resources.
+> - **Use at your own risk.**
+
 ## General Testing Practices
 
 ### 1. Start Small, Scale Gradually

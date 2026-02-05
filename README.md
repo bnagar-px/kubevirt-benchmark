@@ -51,6 +51,14 @@ For questions about this project, please reach out to any of the maintainers abo
 
 ---
 
+> **Important Notice:**
+>
+> - Do not run these benchmarks directly in your production environment without thorough testing first.
+> - Always test in a non-production environment to understand the impact and behavior.
+> - Test results will vary significantly based on your underlying infrastructure, including hardware specifications, storage backend, network configuration, and cluster resources.
+> - **Use at your own risk.**
+
+
 ## License
 
 This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENSE) file for details.

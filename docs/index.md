@@ -34,6 +34,14 @@ Get started in minutes:
 1. **[Install virtbench](install.md)** - Set up the virtbench CLI
 2. **[User Guide](reference/user-guide/test-scenarios/overview.md)** - Overview of testing scenarios
 
+> **Important Notice:**
+>
+> - Do not run these benchmarks directly in your production environment without thorough testing first.
+> - Always test in a non-production environment to understand the impact and behavior.
+> - Test results will vary significantly based on your underlying infrastructure, including hardware specifications, storage backend, network configuration, and cluster resources.
+> - **Use at your own risk.**
+
+
 ## License
 
 This project is licensed under the Apache License 2.0. See [LICENSE](license.md) for details.
