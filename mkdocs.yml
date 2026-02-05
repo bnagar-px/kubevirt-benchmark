@@ -9,7 +9,15 @@ use_directory_urls: true
 repo_url: https://github.com/portworx/kubevirt-benchmark
 theme:
   name: material
-  favicon: favicon.ico
+  favicon: favicon.png
+  logo: virtbench-transparent.png
+  palette:
+    - scheme: default
+      primary: custom
+      accent: custom
+
+extra_css:
+  - stylesheets/extra.css
 
 markdown_extensions:
   - pymdownx.snippets:

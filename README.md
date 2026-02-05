@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="docs/virtbench-transparent.png" alt="virtbench logo" width="400"/>
+</p>
+
 # KubeVirt Performance Benchmarking Suite
 
 [![Documentation](https://img.shields.io/badge/Read-documentation-blue?logo=readthedocs)][docs-module]

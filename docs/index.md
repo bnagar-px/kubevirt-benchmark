@@ -1,4 +1,7 @@
-# KubeVirt Performance Benchmarking Suite
+<h1 style="display: flex; align-items: center; gap: 10px;">
+  <img src="virtbench-transparent.png" alt="virtbench logo" style="height: 5em; width: auto;"/>
+  <span>KubeVirt Performance Benchmarking Suite</span>
+</h1>
 
 A comprehensive, vendor-neutral performance testing toolkit for KubeVirt virtual machines running on OpenShift Container Platform (OCP) or any Kubernetes distribution with KubeVirt.
 

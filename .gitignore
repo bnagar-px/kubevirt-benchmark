@@ -30,3 +30,6 @@ excluded-results/
 *.tmp
 *.swp
 
+# MkDocs build output
+.site/
+site/
