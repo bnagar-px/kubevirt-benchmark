@@ -24,7 +24,7 @@
         
       
       
-      <link rel="icon" href="../../favicon.ico">
+      <link rel="icon" href="../../favicon.png">
       <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.1">
     
     
@@ -34,6 +34,9 @@
     
     
       <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
       
       
 
@@ -52,6 +55,8 @@
       
     
     
+      <link rel="stylesheet" href="../../stylesheets/extra.css">
+    
     <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
@@ -61,13 +66,25 @@
   </head>
   
   
-    <body dir="ltr">
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="custom" data-md-color-accent="custom">
   
     
     <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
     <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
     <label class="md-overlay" for="__drawer"></label>
     <div data-md-component="skip">
+      
+        
+        <a href="#contributing" class="md-skip">
+          Skip to content
+        </a>
       
     </div>
     <div data-md-component="announce">
@@ -83,8 +100,7 @@
   <nav class="md-header__inner md-grid" aria-label="Header">
     <a href="../.." title="virtbench" class="md-header__button md-logo" aria-label="virtbench" data-md-component="logo">
       
-  
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+  <img src="../../virtbench-transparent.png" alt="logo">
 
     </a>
     <label class="md-header__button md-icon" for="__drawer">
@@ -107,6 +123,18 @@
         </div>
       </div>
     </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="custom" data-md-color-accent="custom"  aria-hidden="true"  type="radio" name="__palette" id="__palette_0">
+    
+  
+</form>
+      
     
     
       <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
@@ -193,8 +221,7 @@
   <label class="md-nav__title" for="__drawer">
     <a href="../.." title="virtbench" class="md-nav__button md-logo" aria-label="virtbench" data-md-component="logo">
       
-  
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+  <img src="../../virtbench-transparent.png" alt="logo">
 
     </a>
     virtbench
@@ -1054,6 +1081,26 @@
       <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
       
       
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contributing
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
       
       <a href="./" class="md-nav__link md-nav__link--active">
         
@@ -1071,6 +1118,58 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#getting-started" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Getting Started
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#how-to-contribute" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How to Contribute
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#contributor-flow" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Contributor Flow
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
       
     </li>
   
@@ -1213,6 +1312,49 @@
   
   
   
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#getting-started" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Getting Started
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#how-to-contribute" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How to Contribute
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#contributor-flow" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Contributor Flow
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
   
 </nav>
                   </div>
@@ -1232,9 +1374,50 @@
   
 
 
-  <h1>Contributing</h1>
+<h1 id="contributing">Contributing</h1>
+<p>Thank you for considering contributing to this project! We appreciate all contributions, including bug reports, feature requests, documentation improvements, and code enhancements. Your feedback and involvement help make this project better for everyone.</p>
+<p>Before submitting issues or pull requests, please review this guide to help us respond effectively to your contributions.</p>
+<h2 id="getting-started">Getting Started</h2>
+<ul>
+<li><strong>Report bugs and request features</strong> via <a href="https://github.com/portworx/kubevirt-benchmark/issues">GitHub Issues</a></li>
+<li><strong>Submit pull requests</strong> with improvements</li>
+</ul>
+<h2 id="how-to-contribute">How to Contribute</h2>
+<p>To open a pull request:</p>
+<ol>
+<li>Fork the repository.</li>
+<li>Modify the source; please focus on the <strong>specific</strong> change you are contributing.</li>
+<li>Update the documentation, if required.</li>
+<li>Sign-off and commit to your fork <a href="https://cbea.ms/git-commit">using a clear commit message</a>. Please use <a href="https://conventionalcommits.org">Conventional Commits</a>.</li>
+<li>Open a pull request, answering any default questions in the pull request.</li>
+<li>Pay attention to any automated failures reported in the pull request, and stay involved in the conversation.</li>
+</ol>
+<p>GitHub provides additional documentation on <a href="https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/working-with-forks/fork-a-repo">forking a repository</a> and <a href="https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/creating-a-pull-request">creating a pull request</a>.</p>
+<h2 id="contributor-flow">Contributor Flow</h2>
+<p>This is an outline of the contributor workflow:</p>
+<ol>
+<li>Create a topic branch from where you want to base your work.</li>
+<li>Make commits of logical units.</li>
+<li>Make sure your commit messages are <a href="https://conventionalcommits.org">in the proper format</a> and are signed-off.</li>
+<li>Push your changes to the topic branch in your fork.</li>
+<li>Submit a pull request. If the pull request is a work in progress, please open as draft.</li>
+</ol>
+<blockquote>
+<p>[!IMPORTANT]
+This project <strong>requires</strong> that commits are signed-off for the <a href="https://probot.github.io/apps/dco/">Developer Certificate of Origin</a>.</p>
+</blockquote>
+<p><strong>Example:</strong></p>
+<pre><code class="language-bash">git remote add upstream https://github.com/portworx/kubevirt-benchmark.git
+git checkout -b feat/add-x main
+git commit --signoff --message &quot;feat: add support for x
 
+  Added support for x.
 
+  Signed-off-by: Jane Doe &lt;jdoe@example.com&gt;
+
+  Ref: #123&quot;
+git push origin feat/add-x
+</code></pre>
 
 
 
