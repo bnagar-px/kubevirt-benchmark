@@ -35,6 +35,9 @@ A comprehensive, vendor-neutral performance testing toolkit for KubeVirt virtual
 
 This suite provides automated performance testing tools to measure and validate KubeVirt VM provisioning, boot times, network readiness, and failure recovery scenarios. It's designed for production environments running OpenShift Virtualization or KubeVirt with any CSI-compatible storage backend.
 
+> **⚠️ Note:** KubeVirt Benchmark is an independent opensource project and is not affiliated with the Linux Foundation or CNCF.
+
+
 ## Features
 
 - **Unified CLI Interface**: Professional kubectl-like CLI (`virtbench`) with shell completion
