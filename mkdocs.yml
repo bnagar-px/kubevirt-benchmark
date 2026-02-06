@@ -3,7 +3,7 @@ site_name: virtbench
 site_url: https://portworx.github.io/virtbench
 site_description: KubeVirt Benchmark Suite - Performance testing toolkit for KubeVirt VMs
 docs_dir: docs
-site_author: Portworx
+site_author: KubeVirt Benchmark Suite Contributors
 site_dir: .site
 use_directory_urls: true
 repo_url: https://github.com/portworx/kubevirt-benchmark

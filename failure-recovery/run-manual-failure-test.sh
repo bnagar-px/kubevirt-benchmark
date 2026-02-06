@@ -1,42 +1,54 @@
 #!/bin/bash
 #"""
-#Orchestrate a complete Fence Agents Remediation (FAR) test.
+#Orchestrate a manual node failure recovery test (without FAR operator).
 #
-#This script:
-#1. Applies FAR configuration to trigger node failure
-#2. Waits for node remediation
-#3. Measures VM recovery time
-#4. Removes FAR configuration
+#This script monitors VM recovery after a manual node failure (e.g., power off via BMC).
 #
 #Prerequisites:
 #  - kubectl configured and connected to your cluster
-#  - FAR (Fence Agents Remediation) operator installed
 #  - VMs already created and running on the target node
-#  - far-template.yaml configured with the target node name
+#  - Access to node BMC/IPMI or cloud console to power off the node
+#  - (Optional) patch-vms.sh script if using --remove-node-selectors
+#
+#Workflow:
+#  1. Validates prerequisites and checks VMs exist
+#  2. (Optional) Removes node selectors from VMs to allow rescheduling
+#  3. Waits for you to manually power off the node via BMC/IPMI
+#  4. Monitors node status until it becomes NotReady/Unknown
+#  5. Measures VM recovery time using measure-recovery-time.py
 #
 #Usage:
-#    ./run-far-test.sh --node-name <worker-node> --start 1 --end 60 --vm-name rhel-9-vm
+#    ./run-manual-failure-test.sh --node-name <worker-node> --start 1 --end 60 --vm-name rhel-9-vm
 #
 #Required Arguments:
-#    --node-name NAME          Name of the worker node to trigger FAR on
+#    --node-name NAME          Name of the worker node to fail
 #
 #Optional Arguments:
 #    --start NUM               Start namespace index (default: 1)
 #    --end NUM                 End namespace index (default: 60)
 #    --vm-name NAME            VM name to monitor (default: rhel-9-vm)
 #    --namespace-prefix PREFIX Namespace prefix (default: kubevirt-perf-test)
-#    --far-config FILE         FAR configuration file (default: far-template.yaml)
 #    --concurrency NUM         Monitoring concurrency (default: 128)
 #    --poll-interval NUM       Poll interval in seconds (default: 1)
 #    --log-file FILE           Log file path (optional)
+#    --remove-node-selectors   Remove node selectors before test (allows VM rescheduling)
+#    --skip-ping               Skip ping tests (faster, only check VMI Running state)
 #
-#Example:
-#    ./run-far-test.sh --node-name worker-1 --start 1 --end 60 --vm-name rhel-9-vm
+#Examples:
+#    # Basic test - power off node manually, script monitors recovery
+#    ./run-manual-failure-test.sh --node-name worker-1 --start 1 --end 60 --vm-name rhel-9-vm
 #
-# Author: KubeVirt Benchmark Suite Contributors
-# License: Apache 2.0
+#    # Test with node selector removal and logging
+#    ./run-manual-failure-test.sh --node-name worker-1 --start 1 --end 100 \
+#      --remove-node-selectors \
+#      --log-file recovery-$(date +%Y%m%d-%H%M%S).log
+#
+#    # Fast test - skip ping validation
+#    ./run-manual-failure-test.sh --node-name worker-1 --start 1 --end 60 --skip-ping
+#
+#Author: KubeVirt Benchmark Suite Contributors
+#License: Apache 2.0
 #"""
-
 
 set -euo pipefail
 
@@ -45,7 +57,6 @@ START=1
 END=60
 VM_NAME="rhel-9-vm"
 NODE_NAME=""
-FAR_CONFIG="far-template.yaml"
 SSH_POD="ssh-test-pod"
 SSH_POD_NS="default"
 CONCURRENCY=128
@@ -53,12 +64,15 @@ POLL_INTERVAL=1
 LOG_FILE=""
 NAMESPACE_PREFIX="kubevirt-perf-test"
 DRY_RUN=false
+REMOVE_NODE_SELECTORS=false
+SKIP_PING=false
 
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
+CYAN='\033[0;36m'
 NC='\033[0m' # No Color
 
 # Print colored message
@@ -78,15 +92,8 @@ log_error() {
     echo -e "${RED}[ERROR]${NC} $1"
 }
 
-# Cleanup function to remove FAR configuration
-cleanup_far_config() {
-    log_info "Removing FAR configuration..."
-    if kubectl delete -f "$FAR_CONFIG"; then
-        log_success "FAR configuration removed"
-    else
-        log_warning "Failed to remove FAR configuration (may have been auto-removed)"
-    fi
-    echo ""
+log_step() {
+    echo -e "${CYAN}[STEP]${NC} $1"
 }
 
 # Print usage
@@ -94,31 +101,37 @@ usage() {
     cat << EOF
 Usage: $0 [OPTIONS]
 
-Orchestrate a complete FAR (Fence Agents Remediation) test for KubeVirt VMs.
+Orchestrate a manual node failure recovery test for KubeVirt VMs (no FAR operator required).
 
 Required Options:
-  --node-name NAME          Name of the node to trigger FAR on
+  --node-name NAME          Name of the node to fail
 
 Optional Options:
   --start NUM               Start namespace index (default: 1)
   --end NUM                 End namespace index (default: 60)
   --vm-name NAME            VM name to monitor (default: rhel-9-vm)
   --namespace-prefix PREFIX Namespace prefix (default: kubevirt-perf-test)
-  --far-config FILE         FAR configuration file (default: far-config.yaml)
   --ssh-pod NAME            SSH pod name for ping tests (default: ssh-test-pod)
   --ssh-pod-ns NAMESPACE    SSH pod namespace (default: default)
-  --concurrency NUM         Monitoring concurrency (default: 50)
+  --concurrency NUM         Monitoring concurrency (default: 128)
   --poll-interval NUM       Poll interval in seconds (default: 1)
   --log-file FILE           Log file path (optional)
+  --remove-node-selectors   Remove node selectors before test (allows rescheduling)
+  --skip-ping               Skip ping tests (faster, only check VMI Running state)
   --dry-run                 Show what would be done without executing
   -h, --help                Show this help message
 
 Examples:
-  # Basic FAR test
+  # Basic test - power off node via BMC, script monitors recovery
   $0 --node-name worker-1 --start 1 --end 60 --vm-name rhel-9-vm
 
-  # FAR test with custom configuration
-  $0 --node-name worker-2 --start 1 --end 100 --far-config my-far.yaml
+  # Full test with all options
+  $0 --node-name worker-1 --start 1 --end 100 \\
+     --remove-node-selectors \\
+     --log-file recovery-\$(date +%Y%m%d-%H%M%S).log
+
+  # Fast test - skip ping validation
+  $0 --node-name worker-1 --start 1 --end 60 --skip-ping
 
   # Dry run to see what would happen
   $0 --node-name worker-1 --dry-run
@@ -150,10 +163,6 @@ while [[ $# -gt 0 ]]; do
             NAMESPACE_PREFIX="$2"
             shift 2
             ;;
-        --far-config)
-            FAR_CONFIG="$2"
-            shift 2
-            ;;
         --ssh-pod)
             SSH_POD="$2"
             shift 2
@@ -173,6 +182,14 @@ while [[ $# -gt 0 ]]; do
         --log-file)
             LOG_FILE="$2"
             shift 2
+            ;;
+        --remove-node-selectors)
+            REMOVE_NODE_SELECTORS=true
+            shift
+            ;;
+        --skip-ping)
+            SKIP_PING=true
+            shift
             ;;
         --dry-run)
             DRY_RUN=true
@@ -195,14 +212,16 @@ if [[ -z "$NODE_NAME" ]]; then
 fi
 
 # Print configuration
-log_info "FAR Test Configuration:"
+echo ""
+log_info "Manual Node Failure Recovery Test Configuration:"
 echo "  Node name:          $NODE_NAME"
 echo "  Namespace range:    ${NAMESPACE_PREFIX}-${START} to ${NAMESPACE_PREFIX}-${END}"
 echo "  VM name:            $VM_NAME"
-echo "  FAR config:         $FAR_CONFIG"
 echo "  SSH pod:            $SSH_POD (namespace: $SSH_POD_NS)"
 echo "  Concurrency:        $CONCURRENCY"
 echo "  Poll interval:      ${POLL_INTERVAL}s"
+echo "  Remove node sel:    $REMOVE_NODE_SELECTORS"
+echo "  Skip ping:          $SKIP_PING"
 if [[ -n "$LOG_FILE" ]]; then
     echo "  Log file:           $LOG_FILE"
 fi
@@ -224,16 +243,27 @@ if ! kubectl cluster-info &> /dev/null; then
     exit 1
 fi
 
-if [[ ! -f "$FAR_CONFIG" ]]; then
-    log_error "FAR configuration file not found: $FAR_CONFIG"
-    exit 1
-fi
-
 if ! kubectl get node "$NODE_NAME" &> /dev/null; then
     log_error "Node not found: $NODE_NAME"
     exit 1
 fi
 
+# Check if VMs exist
+log_info "Checking if VMs exist in test namespaces..."
+VM_COUNT=0
+for i in $(seq "$START" "$END"); do
+    NS="${NAMESPACE_PREFIX}-${i}"
+    if kubectl get vm "$VM_NAME" -n "$NS" &> /dev/null; then
+        ((VM_COUNT++))
+    fi
+done
+
+if [[ $VM_COUNT -eq 0 ]]; then
+    log_error "No VMs found in namespaces ${NAMESPACE_PREFIX}-${START} to ${NAMESPACE_PREFIX}-${END}"
+    exit 1
+fi
+
+log_success "Found $VM_COUNT VMs in test namespaces"
 log_success "Prerequisites check passed"
 echo ""
 
@@ -243,29 +273,27 @@ if [[ "$DRY_RUN" == "true" ]]; then
     exit 0
 fi
 
-##Step 1: Remove node selectors from VMs
-#log_info "Step 1: Removing node selectors from VMs to allow rescheduling..."
-#if ./patch-vms.sh --namespace-prefix "$NAMESPACE_PREFIX" --start "$START" --end "$END"; then
-#    log_success "Node selectors removed"
-#else
-#    log_warning "Failed to remove some node selectors (may not exist)"
-#fi
-#echo ""
-#
-## Wait a bit for changes to propagate
-#sleep 5
-#
-# Step 2: Apply FAR configuration
-log_info "Step 2: Applying FAR configuration to trigger node failure..."
-if kubectl apply -f "$FAR_CONFIG"; then
-    log_success "FAR configuration applied"
-else
-    log_error "Failed to apply FAR configuration"
-    exit 1
+# Step 1: Remove node selectors (optional)
+if [[ "$REMOVE_NODE_SELECTORS" == "true" ]]; then
+    log_step "Step 1: Removing node selectors from VMs to allow rescheduling..."
+    if [[ -f "./patch-vms.sh" ]]; then
+        if ./patch-vms.sh --namespace-prefix "$NAMESPACE_PREFIX" --start "$START" --end "$END"; then
+            log_success "Node selectors removed"
+        else
+            log_warning "Failed to remove some node selectors (may not exist)"
+        fi
+    else
+        log_warning "patch-vms.sh not found, skipping node selector removal"
+    fi
+    echo ""
+    sleep 2
 fi
+
+# Step 2: Monitor node status and wait for node to go down
+log_step "Step 2: Monitoring Node Status (Waiting for Power-Off)"
 echo ""
 
-# Step 3Wait for FAR to take effect
+log_info "Monitoring node $NODE_NAME for failure (power off manually)..."
 log_info "Waiting for node to become NotReady or Unknown..."
 
 MAX_WAIT=600  # Wait up to 10 minutes for node to go down
@@ -295,9 +323,8 @@ if [[ $ELAPSED -ge $MAX_WAIT ]]; then
 fi
 echo ""
 
-
-# Step 4: Measure recovery time
-log_info "Step 4: Measuring VM recovery time..."
+# Step 3: Start recovery monitoring
+log_step "Step 3: Monitoring VM Recovery"
 echo ""
 
 RECOVERY_CMD="python3 measure-recovery-time.py \
@@ -308,22 +335,23 @@ RECOVERY_CMD="python3 measure-recovery-time.py \
     --ssh-pod $SSH_POD \
     --ssh-pod-ns $SSH_POD_NS \
     --concurrency $CONCURRENCY \
-    --poll-interval $POLL_INTERVAL \
-    --skip-ping
-    "
+    --poll-interval $POLL_INTERVAL"
 
+if [[ "$SKIP_PING" == "true" ]]; then
+    RECOVERY_CMD="$RECOVERY_CMD --skip-ping"
+fi
 
 if [[ -n "$LOG_FILE" ]]; then
     RECOVERY_CMD="$RECOVERY_CMD --log-file $LOG_FILE"
 fi
 
+log_info "Starting recovery monitoring..."
+echo ""
+
 if eval "$RECOVERY_CMD"; then
-    log_success "Recovery test completed successfully"
-    cleanup_far_config
+    log_success "Recovery monitoring completed successfully"
     exit 0
 else
-    log_error "Recovery test failed"
-    cleanup_far_config
+    log_error "Recovery monitoring failed"
     exit 1
 fi
-
