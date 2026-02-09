@@ -9,7 +9,7 @@
         <meta name="description" content="KubeVirt Benchmark Suite - Performance testing toolkit for KubeVirt VMs">
       
       
-        <meta name="author" content="Portworx">
+        <meta name="author" content="KubeVirt Benchmark Suite Contributors">
       
       
         <link rel="canonical" href="https://portworx.github.io/virtbench/reference/user-guide/test-scenarios/failure-recovery/">
@@ -761,6 +761,18 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#automated-far-testing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Automated FAR Testing
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Automated FAR Testing">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
   <a href="#prerequisites-for-far-testing" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -769,8 +781,7 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Prerequisites for FAR Testing">
-      <ul class="md-nav__list">
+</li>
         
           <li class="md-nav__item">
   <a href="#required-operators" class="md-nav__link">
@@ -862,10 +873,21 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#using-python-script" class="md-nav__link">
+  <a href="#using-shell-script" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Using Python Script
+        Using Shell Script
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#using-python-script-directly" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Using Python Script Directly
       
     </span>
   </a>
@@ -951,10 +973,154 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#using-python-script_1" class="md-nav__link">
+  <a href="#using-python-script" class="md-nav__link">
     <span class="md-ellipsis">
       
         Using Python Script
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#manual-failure-testing-without-far" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Manual Failure Testing (Without FAR)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Manual Failure Testing (Without FAR)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#prerequisites" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Prerequisites
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#how-it-works" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How It Works
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#running-manual-failure-tests" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Running Manual Failure Tests
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Running Manual Failure Tests">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#step-1-create-vms-on-target-node" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 1: Create VMs on Target Node
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-2-run-the-manual-failure-test-script" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 2: Run the Manual Failure Test Script
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-3-power-off-the-node" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 3: Power Off the Node
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-4-monitor-recovery" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 4: Monitor Recovery
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#example-output" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Example Output
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#configuration-options" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Configuration Options
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#when-to-use-manual-vs-far-testing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        When to Use Manual vs FAR Testing
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cleanup_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Cleanup
       
     </span>
   </a>
@@ -979,6 +1145,18 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#far-specific-issues" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        FAR-Specific Issues
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="FAR-Specific Issues">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
   <a href="#far-cr-not-created" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -986,6 +1164,11 @@
       
     </span>
   </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
         
@@ -1008,6 +1191,56 @@
       
     </span>
   </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#manual-testing-issues" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Manual Testing Issues
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Manual Testing Issues">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#script-cant-detect-node-failure" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Script Can't Detect Node Failure
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#vms-not-rescheduling" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        VMs Not Rescheduling
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#recovery-takes-too-long" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Recovery Takes Too Long
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
         
@@ -1560,6 +1793,18 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#automated-far-testing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Automated FAR Testing
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Automated FAR Testing">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
   <a href="#prerequisites-for-far-testing" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1568,8 +1813,7 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Prerequisites for FAR Testing">
-      <ul class="md-nav__list">
+</li>
         
           <li class="md-nav__item">
   <a href="#required-operators" class="md-nav__link">
@@ -1661,10 +1905,21 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#using-python-script" class="md-nav__link">
+  <a href="#using-shell-script" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Using Python Script
+        Using Shell Script
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#using-python-script-directly" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Using Python Script Directly
       
     </span>
   </a>
@@ -1750,10 +2005,154 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#using-python-script_1" class="md-nav__link">
+  <a href="#using-python-script" class="md-nav__link">
     <span class="md-ellipsis">
       
         Using Python Script
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#manual-failure-testing-without-far" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Manual Failure Testing (Without FAR)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Manual Failure Testing (Without FAR)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#prerequisites" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Prerequisites
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#how-it-works" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How It Works
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#running-manual-failure-tests" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Running Manual Failure Tests
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Running Manual Failure Tests">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#step-1-create-vms-on-target-node" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 1: Create VMs on Target Node
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-2-run-the-manual-failure-test-script" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 2: Run the Manual Failure Test Script
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-3-power-off-the-node" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 3: Power Off the Node
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-4-monitor-recovery" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 4: Monitor Recovery
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#example-output" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Example Output
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#configuration-options" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Configuration Options
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#when-to-use-manual-vs-far-testing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        When to Use Manual vs FAR Testing
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cleanup_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Cleanup
       
     </span>
   </a>
@@ -1778,6 +2177,18 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#far-specific-issues" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        FAR-Specific Issues
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="FAR-Specific Issues">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
   <a href="#far-cr-not-created" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1785,6 +2196,11 @@
       
     </span>
   </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
         
@@ -1807,6 +2223,56 @@
       
     </span>
   </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#manual-testing-issues" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Manual Testing Issues
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Manual Testing Issues">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#script-cant-detect-node-failure" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Script Can't Detect Node Failure
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#vms-not-rescheduling" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        VMs Not Rescheduling
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#recovery-takes-too-long" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Recovery Takes Too Long
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
         
@@ -1847,9 +2313,16 @@
 
 
 <h1 id="failure-and-recovery-testing">Failure and Recovery Testing</h1>
-<p>Tests VM recovery time after simulated node failures using Fence Agents Remediation (FAR).</p>
-<p><strong>Use Case</strong>: Validates high availability and disaster recovery capabilities.</p>
-<h2 id="prerequisites-for-far-testing">Prerequisites for FAR Testing</h2>
+<p>Tests VM recovery time after node failures to validate high availability and disaster recovery capabilities.</p>
+<p><strong>Use Case</strong>: Validates that VMs can recover and restart on healthy nodes after a node failure.</p>
+<p>This guide covers two approaches:</p>
+<ol>
+<li><strong><a href="#automated-far-testing">Automated FAR Testing</a></strong> - Uses Fence Agents Remediation (FAR) operator for automated node fencing</li>
+<li><strong><a href="#manual-failure-testing-without-far">Manual Failure Testing</a></strong> - Manual node power-off without FAR operator (simpler setup)</li>
+</ol>
+<hr />
+<h2 id="automated-far-testing">Automated FAR Testing</h2>
+<h3 id="prerequisites-for-far-testing">Prerequisites for FAR Testing</h3>
 <p>!!! warning "Important"
     Before running failure and recovery tests, you must have the following operators installed and configured on your cluster.</p>
 <h3 id="required-operators">Required Operators</h3>
@@ -1910,20 +2383,47 @@ virtbench failure-recovery \
   --far-name my-far-resource \
   --save-results
 </code></pre>
-<h3 id="using-python-script">Using Python Script</h3>
+<h3 id="using-shell-script">Using Shell Script</h3>
+<p>The <code>run-far-test.sh</code> script orchestrates the complete FAR test workflow:</p>
+<p><strong>Prerequisites</strong>:
+- VMs already created and running on the target node
+- FAR operator installed and configured
+- <code>far-template.yaml</code> configured with the target node name</p>
+<p><strong>Steps</strong>:</p>
 <pre><code class="language-bash">cd failure-recovery
 
-# Edit far-template.yaml with your node details
+# 1. Edit far-template.yaml with your node details
 vim far-template.yaml
 
-# Run the complete FAR test using the shell script
+# 2. Run the complete FAR test
 ./run-far-test.sh \
+  --node-name worker-node-1 \
   --start 1 \
   --end 60 \
-  --node-name worker-node-1 \
   --vm-name rhel-9-vm
 
-# Or run the Python script directly
+# With custom options
+./run-far-test.sh \
+  --node-name worker-node-1 \
+  --start 1 \
+  --end 60 \
+  --vm-name rhel-9-vm \
+  --far-config my-far-template.yaml \
+  --concurrency 128 \
+  --log-file recovery-test.log
+</code></pre>
+<p><strong>What the script does</strong>:</p>
+<ol>
+<li>Validates prerequisites (kubectl, FAR config, node exists)</li>
+<li>Applies FAR configuration to trigger node failure</li>
+<li>Waits for node to become NotReady/Unknown</li>
+<li>Measures VM recovery time</li>
+<li>Cleans up FAR configuration</li>
+</ol>
+<h3 id="using-python-script-directly">Using Python Script Directly</h3>
+<pre><code class="language-bash">cd failure-recovery
+
+# Run the Python script directly for recovery measurement
 python3 measure-recovery-time.py \
   --start 1 \
   --end 60 \
@@ -1991,7 +2491,7 @@ virtbench failure-recovery \
   --far-name my-far-resource \
   --failed-node worker-node-1
 </code></pre>
-<h3 id="using-python-script_1">Using Python Script</h3>
+<h3 id="using-python-script">Using Python Script</h3>
 <pre><code class="language-bash">cd failure-recovery
 python3 measure-recovery-time.py \
   --start 1 \
@@ -2001,8 +2501,228 @@ python3 measure-recovery-time.py \
   --far-name my-far-resource \
   --failed-node worker-node-1
 </code></pre>
+<hr />
+<h2 id="manual-failure-testing-without-far">Manual Failure Testing (Without FAR)</h2>
+<p>If you don't have the FAR operator installed or want to test manual node failure scenarios, you can use the manual failure recovery test script.</p>
+<h3 id="prerequisites">Prerequisites</h3>
+<p><strong>Required</strong>:
+- kubectl configured and connected to your cluster
+- VMs already created and running on the target node
+- Access to node BMC/IPMI or cloud console to manually power off the node</p>
+<p><strong>Optional</strong>:
+- <code>patch-vms.sh</code> script (if using <code>--remove-node-selectors</code> option)</p>
+<h3 id="how-it-works">How It Works</h3>
+<p>The manual test script:</p>
+<ol>
+<li><strong>Validates prerequisites</strong> - Checks kubectl connectivity, node exists, and VMs are present</li>
+<li><strong>(Optional) Removes node selectors</strong> - Allows VMs to reschedule to other nodes</li>
+<li><strong>Waits for manual node failure</strong> - You power off the node via BMC/IPMI/cloud console</li>
+<li><strong>Monitors node status</strong> - Detects when node becomes NotReady/Unknown</li>
+<li><strong>Measures VM recovery</strong> - Tracks how long VMs take to recover and become Running</li>
+</ol>
+<h3 id="running-manual-failure-tests">Running Manual Failure Tests</h3>
+<h4 id="step-1-create-vms-on-target-node">Step 1: Create VMs on Target Node</h4>
+<p>First, create VMs on the node you want to test:</p>
+<pre><code class="language-bash"># Create VMs with node selector to pin them to specific node
+virtbench datasource-clone \
+  --start 1 \
+  --end 60 \
+  --storage-class YOUR-STORAGE-CLASS \
+  --node-name worker-node-1 \
+  --save-results
+</code></pre>
+<h4 id="step-2-run-the-manual-failure-test-script">Step 2: Run the Manual Failure Test Script</h4>
+<pre><code class="language-bash">cd failure-recovery
+
+# Basic test - you'll manually power off the node
+./run-manual-failure-test.sh \
+  --node-name worker-node-1 \
+  --start 1 \
+  --end 60 \
+  --vm-name rhel-9-vm
+
+# With node selector removal (allows VMs to reschedule)
+./run-manual-failure-test.sh \
+  --node-name worker-node-1 \
+  --start 1 \
+  --end 60 \
+  --vm-name rhel-9-vm \
+  --remove-node-selectors
+
+# With logging and custom options
+./run-manual-failure-test.sh \
+  --node-name worker-node-1 \
+  --start 1 \
+  --end 100 \
+  --vm-name rhel-9-vm \
+  --remove-node-selectors \
+  --concurrency 128 \
+  --log-file recovery-$(date +%Y%m%d-%H%M%S).log
+
+# Fast test - skip ping validation (only check VMI Running state)
+./run-manual-failure-test.sh \
+  --node-name worker-node-1 \
+  --start 1 \
+  --end 60 \
+  --vm-name rhel-9-vm \
+  --skip-ping
+</code></pre>
+<h4 id="step-3-power-off-the-node">Step 3: Power Off the Node</h4>
+<p>When the script starts monitoring, manually power off the target node:</p>
+<p><strong>Using IPMI/BMC</strong>:</p>
+<pre><code class="language-bash"># Example using ipmitool
+ipmitool -I lanplus -H &lt;bmc-ip&gt; -U &lt;username&gt; -P &lt;password&gt; power off
+</code></pre>
+<p><strong>Using Cloud Provider Console</strong>:
+- AWS: Stop the EC2 instance
+- Azure: Stop the VM
+- GCP: Stop the Compute Engine instance
+- vSphere: Power off the VM</p>
+<p><strong>Using Physical Server</strong>:
+- Press and hold the power button, or
+- Use the BMC web interface</p>
+<h4 id="step-4-monitor-recovery">Step 4: Monitor Recovery</h4>
+<p>The script will:</p>
+<ol>
+<li>Detect when the node becomes NotReady/Unknown</li>
+<li>Start measuring VM recovery time</li>
+<li>Monitor VMs until they reach Running state (and optionally ping-ready)</li>
+<li>Display recovery statistics</li>
+</ol>
+<h3 id="example-output">Example Output</h3>
+<pre><code>[INFO] Manual Node Failure Recovery Test Configuration:
+  Node name:          worker-node-1
+  Namespace range:    kubevirt-perf-test-1 to kubevirt-perf-test-60
+  VM name:            rhel-9-vm
+  Concurrency:        128
+  Poll interval:      1s
+
+[SUCCESS] Found 60 VMs in test namespaces
+[SUCCESS] Prerequisites check passed
+
+[STEP] Step 1: Removing node selectors from VMs to allow rescheduling...
+[SUCCESS] Node selectors removed
+
+[STEP] Step 2: Monitoring Node Status (Waiting for Power-Off)
+[INFO] Monitoring node worker-node-1 for failure (power off manually)...
+[INFO] Waiting for node to become NotReady or Unknown...
+[SUCCESS] Node worker-node-1 is down (Status: NotReady/Unknown) after 45s
+
+[STEP] Step 3: Monitoring VM Recovery
+[INFO] Starting recovery monitoring...
+
+VM Recovery Summary:
+  Total VMs:           60
+  Recovered:           60
+  Failed:              0
+  Average Recovery:    4m 32s
+  Min Recovery:        3m 15s
+  Max Recovery:        6m 45s
+</code></pre>
+<h3 id="configuration-options">Configuration Options</h3>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--node-name</code></td>
+<td><strong>Required</strong>. Name of the node to fail</td>
+<td>-</td>
+</tr>
+<tr>
+<td><code>--start</code></td>
+<td>Start namespace index</td>
+<td>1</td>
+</tr>
+<tr>
+<td><code>--end</code></td>
+<td>End namespace index</td>
+<td>60</td>
+</tr>
+<tr>
+<td><code>--vm-name</code></td>
+<td>VM name to monitor</td>
+<td>rhel-9-vm</td>
+</tr>
+<tr>
+<td><code>--namespace-prefix</code></td>
+<td>Namespace prefix</td>
+<td>kubevirt-perf-test</td>
+</tr>
+<tr>
+<td><code>--concurrency</code></td>
+<td>Monitoring concurrency</td>
+<td>128</td>
+</tr>
+<tr>
+<td><code>--poll-interval</code></td>
+<td>Poll interval in seconds</td>
+<td>1</td>
+</tr>
+<tr>
+<td><code>--log-file</code></td>
+<td>Log file path</td>
+<td>None</td>
+</tr>
+<tr>
+<td><code>--remove-node-selectors</code></td>
+<td>Remove node selectors before test</td>
+<td>false</td>
+</tr>
+<tr>
+<td><code>--skip-ping</code></td>
+<td>Skip ping tests (faster)</td>
+<td>false</td>
+</tr>
+<tr>
+<td><code>--dry-run</code></td>
+<td>Show what would be done</td>
+<td>false</td>
+</tr>
+</tbody>
+</table>
+<h3 id="when-to-use-manual-vs-far-testing">When to Use Manual vs FAR Testing</h3>
+<p><strong>Use Manual Testing When</strong>:
+- You don't have FAR operator installed
+- Testing in a simple lab environment
+- You want full control over the failure timing
+- Learning about VM recovery behavior
+- Testing specific failure scenarios</p>
+<p><strong>Use FAR Testing When</strong>:
+- You have production HA requirements
+- Need automated node remediation
+- Testing at scale with multiple nodes
+- Validating production HA configuration
+- Need repeatable automated tests</p>
+<h3 id="cleanup_1">Cleanup</h3>
+<p>After testing, clean up the test VMs:</p>
+<pre><code class="language-bash"># Using virtbench CLI
+virtbench cleanup \
+  --start 1 \
+  --end 60 \
+  --cleanup-vms \
+  --cleanup-namespaces
+
+# Or manually
+for i in {1..60}; do
+  kubectl delete namespace kubevirt-perf-test-$i
+done
+</code></pre>
+<p>If the node is still powered off, power it back on:</p>
+<pre><code class="language-bash"># Using IPMI
+ipmitool -I lanplus -H &lt;bmc-ip&gt; -U &lt;username&gt; -P &lt;password&gt; power on
+
+# Or use your cloud provider console/BMC interface
+</code></pre>
+<hr />
 <h2 id="troubleshooting">Troubleshooting</h2>
-<h3 id="far-cr-not-created">FAR CR Not Created</h3>
+<h3 id="far-specific-issues">FAR-Specific Issues</h3>
+<h4 id="far-cr-not-created">FAR CR Not Created</h4>
 <p><strong>Cause</strong>: NodeHealthCheck not detecting node failure</p>
 <p><strong>Solution</strong>:
 - Verify NodeHealthCheck CR is configured correctly
@@ -2022,6 +2742,29 @@ python3 measure-recovery-time.py \
 - Optimize fence agent timeout settings
 - Ensure sufficient resources on healthy nodes
 - Check storage backend performance</p>
+<h3 id="manual-testing-issues">Manual Testing Issues</h3>
+<h4 id="script-cant-detect-node-failure">Script Can't Detect Node Failure</h4>
+<p><strong>Symptoms</strong>: Script times out waiting for node to become NotReady</p>
+<p><strong>Solutions</strong>:
+- Verify you actually powered off the node
+- Check node status manually: <code>kubectl get node &lt;node-name&gt;</code>
+- Increase <code>MAX_WAIT</code> timeout in the script if needed
+- Ensure kubectl can still reach the cluster</p>
+<h4 id="vms-not-rescheduling">VMs Not Rescheduling</h4>
+<p><strong>Symptoms</strong>: VMs remain in pending state after node failure</p>
+<p><strong>Solutions</strong>:
+- Use <code>--remove-node-selectors</code> flag to allow rescheduling
+- Verify other nodes have sufficient resources
+- Check if VMs have other constraints (affinity, taints)
+- Review VM events: <code>kubectl describe vm &lt;vm-name&gt; -n &lt;namespace&gt;</code></p>
+<h4 id="recovery-takes-too-long">Recovery Takes Too Long</h4>
+<p><strong>Symptoms</strong>: VMs take more than 10-15 minutes to recover</p>
+<p><strong>Solutions</strong>:
+- Check if Kubernetes detected the node failure (node should be NotReady)
+- Verify pod eviction timeout settings
+- Ensure sufficient resources on healthy nodes
+- Check storage backend performance and availability
+- Review kubelet logs on healthy nodes</p>
 <h2 id="see-also">See Also</h2>
 <ul>
 <li><a href="../../configuration/">Configuration Options</a> - Detailed configuration reference</li>
