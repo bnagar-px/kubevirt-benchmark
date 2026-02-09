@@ -1,0 +1,48 @@
+# User Guide
+
+## Testing Scenarios
+
+The benchmark suite supports the following testing scenarios:
+
+### 1. DataSource-Based VM Provisioning
+Tests VM creation using KubeVirt DataSource cloning for efficient VM provisioning.
+
+**Use Case**: Measure VM provisioning performance with your storage backend.
+
+[Learn more →](datasource-clone.md)
+
+### 2. Live Migration Testing
+Tests VM live migration with existing VMs or by creating new VMs across different scenarios.
+
+**Use Case**: Validates migration performance for node maintenance, load balancing, and disaster recovery scenarios.
+
+[Learn more →](migration.md)
+
+### 3. Capacity Benchmark Testing
+Tests cluster capacity limits by running comprehensive VM operations in a loop until failure.
+
+**Use Case**: Discover maximum VM capacity, test volume expansion limits, validate snapshot functionality, and stress-test the cluster.
+
+[Learn more →](capacity-benchmark.md)
+
+### 4. Failure and Recovery Testing
+Tests VM recovery time after simulated node failures using Fence Agents Remediation (FAR).
+
+**Use Case**: Validates high availability and disaster recovery capabilities.
+
+[Learn more →](failure-recovery.md)
+
+### 5. Cluster Validation
+Validates that your OpenShift cluster is properly configured and ready to run KubeVirt performance tests.
+
+**Use Case**: Pre-flight checks before running benchmarks.
+
+[Learn more →](cluster-validation.md)
+
+## Next Steps
+
+1. [Install virtbench](../../../install.md) - Get started with installation
+2. [Configure your environment](../configuration.md) - Set up storage classes and templates
+3. [Run your first test](datasource-clone.md) - Start with a simple VM creation test
+4. [View results](../output-and-results.md) - Understand test output and metrics
+

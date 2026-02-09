@@ -1,0 +1,56 @@
+# yaml-language-server: $schema=https://squidfunk.github.io/mkdocs-material/schema.json
+site_name: virtbench
+site_url: https://portworx.github.io/virtbench
+site_description: KubeVirt Benchmark Suite - Performance testing toolkit for KubeVirt VMs
+docs_dir: docs
+site_author: KubeVirt Benchmark Suite Contributors
+site_dir: .site
+use_directory_urls: true
+repo_url: https://github.com/portworx/kubevirt-benchmark
+theme:
+  name: material
+  favicon: favicon.png
+  logo: virtbench-transparent.png
+  palette:
+    - scheme: default
+      primary: custom
+      accent: custom
+
+extra_css:
+  - stylesheets/extra.css
+
+markdown_extensions:
+  - pymdownx.snippets:
+      base_path: .
+
+nav:
+- Getting Started:
+  - Home: index.md
+  - Installation: install.md
+  - Release Notes: release-notes.md
+  - License: license.md
+- Reference:
+  - Repository Structure: reference/user-guide/repository-structure.md
+  - User Guide:
+      - Test Scenarios:
+          - Overview: reference/user-guide/test-scenarios/overview.md
+          - Datasource Clone: reference/user-guide/test-scenarios/datasource-clone.md
+          - Migration: reference/user-guide/test-scenarios/migration.md
+          - Capacity Benchmark: reference/user-guide/test-scenarios/capacity-benchmark.md
+          - Failure Recovery: reference/user-guide/test-scenarios/failure-recovery.md
+          - Cluster Validation: reference/user-guide/test-scenarios/cluster-validation.md
+      - Boot Storm Testing Guide: reference/user-guide/boot-storm-guide.md
+      - VM Template Guide: reference/user-guide/vm-template-guide.md
+      - Configuration Options: reference/user-guide/configuration.md
+      - Output and Results: reference/user-guide/output-and-results.md
+      - Results Dashboard: reference/user-guide/results-dashboard.md
+      - Cleanup Guide: reference/user-guide/cleanup-guide.md
+  - Troubleshooting: reference/troubleshooting.md
+  - Best Practices: reference/best-practices.md
+- Community:
+  - community/index.md
+  - Contributing: community/contributing.md
+  - Search Issues: https://github.com/portworx/kubevirt-benchmark/issues
+  - Open an Issue: https://github.com/portworx/kubevirt-benchmark/issues/new/choose
+  - Support: community/support.md
+  - Code of Conduct: community/code-of-conduct.md
