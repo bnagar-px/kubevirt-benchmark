@@ -12,29 +12,31 @@
         <meta name="author" content="KubeVirt Benchmark Suite Contributors">
       
       
-        <link rel="canonical" href="https://portworx.github.io/kubevirt-benchmark/community/code-of-conduct/">
+        <link rel="canonical" href="https://portworx.github.io/kubevirt-benchmark/reference/user-guide/test-scenarios/boot-storm/">
       
       
-        <link rel="prev" href="../support/">
+        <link rel="prev" href="../datasource-clone/">
       
+      
+        <link rel="next" href="../migration/">
       
       
         
       
       
-      <link rel="icon" href="../../favicon.png">
+      <link rel="icon" href="../../../../favicon.png">
       <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
     
     
       
-        <title>Code of Conduct - virtbench</title>
+        <title>Boot Storm - virtbench</title>
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
+      <link rel="stylesheet" href="../../../../assets/stylesheets/main.484c7ddc.min.css">
       
         
-        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../../../../assets/stylesheets/palette.ab4e12ef.min.css">
       
       
 
@@ -53,9 +55,9 @@
       
     
     
-      <link rel="stylesheet" href="../../stylesheets/extra.css">
+      <link rel="stylesheet" href="../../../../stylesheets/extra.css">
     
-    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("../../../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
 
@@ -80,7 +82,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#contributor-covenant-30-code-of-conduct" class="md-skip">
+        <a href="#boot-storm-testing" class="md-skip">
           Skip to content
         </a>
       
@@ -96,9 +98,9 @@
 
 <header class="md-header md-header--shadow" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="../.." title="virtbench" class="md-header__button md-logo" aria-label="virtbench" data-md-component="logo">
+    <a href="../../../.." title="virtbench" class="md-header__button md-logo" aria-label="virtbench" data-md-component="logo">
       
-  <img src="../../virtbench-transparent.png" alt="logo">
+  <img src="../../../../virtbench-transparent.png" alt="logo">
 
     </a>
     <label class="md-header__button md-icon" for="__drawer">
@@ -115,7 +117,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Code of Conduct
+              Boot Storm
             
           </span>
         </div>
@@ -217,9 +219,9 @@
 
 <nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="../.." title="virtbench" class="md-nav__button md-logo" aria-label="virtbench" data-md-component="logo">
+    <a href="../../../.." title="virtbench" class="md-nav__button md-logo" aria-label="virtbench" data-md-component="logo">
       
-  <img src="../../virtbench-transparent.png" alt="logo">
+  <img src="../../../../virtbench-transparent.png" alt="logo">
 
     </a>
     virtbench
@@ -293,7 +295,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../.." class="md-nav__link">
+      <a href="../../../.." class="md-nav__link">
         
   
   
@@ -321,7 +323,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../install/" class="md-nav__link">
+      <a href="../../../../install/" class="md-nav__link">
         
   
   
@@ -349,7 +351,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../release-notes/" class="md-nav__link">
+      <a href="../../../../release-notes/" class="md-nav__link">
         
   
   
@@ -377,7 +379,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../license/" class="md-nav__link">
+      <a href="../../../../license/" class="md-nav__link">
         
   
   
@@ -409,18 +411,20 @@
       
   
   
+    
   
   
+  
     
     
     
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
         
           
           <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
@@ -441,7 +445,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_2">
             <span class="md-nav__icon md-icon"></span>
             
@@ -459,7 +463,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../reference/user-guide/repository-structure/" class="md-nav__link">
+      <a href="../../repository-structure/" class="md-nav__link">
         
   
   
@@ -484,18 +488,20 @@
                 
   
   
+    
   
   
+  
     
     
     
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_2" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_2" checked>
         
           
           <label class="md-nav__link" for="__nav_2_2" id="__nav_2_2_label" tabindex="0">
@@ -516,7 +522,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_2_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_2_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_2_2">
             <span class="md-nav__icon md-icon"></span>
             
@@ -531,18 +537,20 @@
                 
   
   
+    
   
   
+  
     
     
     
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_2_1" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_2_1" checked>
         
           
           <label class="md-nav__link" for="__nav_2_2_1" id="__nav_2_2_1_label" tabindex="0">
@@ -563,7 +571,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_2_2_1_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_2_2_1_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_2_2_1">
             <span class="md-nav__icon md-icon"></span>
             
@@ -581,7 +589,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../reference/user-guide/test-scenarios/overview/" class="md-nav__link">
+      <a href="../overview/" class="md-nav__link">
         
   
   
@@ -609,7 +617,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../reference/user-guide/test-scenarios/datasource-clone/" class="md-nav__link">
+      <a href="../datasource-clone/" class="md-nav__link">
         
   
   
@@ -634,10 +642,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../../reference/user-guide/test-scenarios/boot-storm/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Boot Storm
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -653,6 +688,259 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#what-is-boot-storm-testing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What is Boot Storm Testing?
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#how-it-works" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How It Works
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="How It Works">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#phase-1-initial-vm-creation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 1: Initial VM Creation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#phase-2-shutdown-all-vms" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 2: Shutdown All VMs
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#phase-3-boot-storm-simultaneous-startup" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 3: Boot Storm (Simultaneous Startup)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#phase-4-comparison" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 4: Comparison
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#testing-scenarios" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Testing Scenarios
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Testing Scenarios">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#single-node-boot-storm" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Single Node Boot Storm
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#multi-node-boot-storm" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Multi-Node Boot Storm
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#boot-storm-against-existing-vms" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Boot Storm Against Existing VMs
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#interpreting-boot-storm-results" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Interpreting Boot Storm Results
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Interpreting Boot Storm Results">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#key-metrics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Key Metrics
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#what-to-look-for" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What to Look For
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#common-bottlenecks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Common Bottlenecks
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#best-practices" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Best Practices
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#advanced-options" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Advanced Options
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Advanced Options">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#namespace-batch-size" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Namespace Batch Size
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#concurrency-control" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Concurrency Control
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        See Also
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -665,7 +953,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../reference/user-guide/test-scenarios/migration/" class="md-nav__link">
+      <a href="../migration/" class="md-nav__link">
         
   
   
@@ -693,7 +981,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../reference/user-guide/test-scenarios/chaos-benchmark/" class="md-nav__link">
+      <a href="../chaos-benchmark/" class="md-nav__link">
         
   
   
@@ -721,7 +1009,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../reference/user-guide/test-scenarios/failure-recovery/" class="md-nav__link">
+      <a href="../failure-recovery/" class="md-nav__link">
         
   
   
@@ -749,7 +1037,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../reference/user-guide/test-scenarios/cluster-validation/" class="md-nav__link">
+      <a href="../cluster-validation/" class="md-nav__link">
         
   
   
@@ -777,7 +1065,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../reference/user-guide/test-scenarios/fio-benchmark/" class="md-nav__link">
+      <a href="../fio-benchmark/" class="md-nav__link">
         
   
   
@@ -805,7 +1093,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../reference/user-guide/test-scenarios/elbencho-benchmark/" class="md-nav__link">
+      <a href="../elbencho-benchmark/" class="md-nav__link">
         
   
   
@@ -880,7 +1168,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../reference/user-guide/test-scenarios/vm-ops/overview/" class="md-nav__link">
+      <a href="../vm-ops/overview/" class="md-nav__link">
         
   
   
@@ -908,7 +1196,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../reference/user-guide/test-scenarios/vm-ops/drain-nodes/" class="md-nav__link">
+      <a href="../vm-ops/drain-nodes/" class="md-nav__link">
         
   
   
@@ -936,7 +1224,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../reference/user-guide/test-scenarios/vm-ops/rebalance-vms/" class="md-nav__link">
+      <a href="../vm-ops/rebalance-vms/" class="md-nav__link">
         
   
   
@@ -964,7 +1252,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../reference/user-guide/test-scenarios/vm-ops/vm-snapshot/" class="md-nav__link">
+      <a href="../vm-ops/vm-snapshot/" class="md-nav__link">
         
   
   
@@ -992,7 +1280,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../reference/user-guide/test-scenarios/vm-ops/run-blkdiscard/" class="md-nav__link">
+      <a href="../vm-ops/run-blkdiscard/" class="md-nav__link">
         
   
   
@@ -1020,7 +1308,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../reference/user-guide/test-scenarios/vm-ops/power-toggle-vms/" class="md-nav__link">
+      <a href="../vm-ops/power-toggle-vms/" class="md-nav__link">
         
   
   
@@ -1064,7 +1352,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../reference/user-guide/vm-template-guide/" class="md-nav__link">
+      <a href="../../vm-template-guide/" class="md-nav__link">
         
   
   
@@ -1092,7 +1380,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../reference/user-guide/configuration/" class="md-nav__link">
+      <a href="../../configuration/" class="md-nav__link">
         
   
   
@@ -1120,7 +1408,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../reference/user-guide/output-and-results/" class="md-nav__link">
+      <a href="../../output-and-results/" class="md-nav__link">
         
   
   
@@ -1148,7 +1436,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../reference/user-guide/results-dashboard/" class="md-nav__link">
+      <a href="../../results-dashboard/" class="md-nav__link">
         
   
   
@@ -1176,7 +1464,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../reference/user-guide/cleanup-guide/" class="md-nav__link">
+      <a href="../../cleanup-guide/" class="md-nav__link">
         
   
   
@@ -1212,7 +1500,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../reference/troubleshooting/" class="md-nav__link">
+      <a href="../../../troubleshooting/" class="md-nav__link">
         
   
   
@@ -1240,7 +1528,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../reference/best-practices/" class="md-nav__link">
+      <a href="../../../best-practices/" class="md-nav__link">
         
   
   
@@ -1272,20 +1560,18 @@
       
   
   
-    
   
   
-  
     
     
     
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
         
           
           <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
@@ -1306,7 +1592,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_3">
             <span class="md-nav__icon md-icon"></span>
             
@@ -1324,7 +1610,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../" class="md-nav__link">
+      <a href="../../../../community/" class="md-nav__link">
         
   
   
@@ -1352,7 +1638,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../contributing/" class="md-nav__link">
+      <a href="../../../../community/contributing/" class="md-nav__link">
         
   
   
@@ -1436,7 +1722,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../support/" class="md-nav__link">
+      <a href="../../../../community/support/" class="md-nav__link">
         
   
   
@@ -1461,37 +1747,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Code of Conduct
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../../../../community/code-of-conduct/" class="md-nav__link">
         
   
   
@@ -1507,120 +1766,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#our-pledge" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Our Pledge
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#encouraged-behaviors" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Encouraged Behaviors
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#restricted-behaviors" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Restricted Behaviors
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Restricted Behaviors">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#other-restrictions" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Other Restrictions
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#reporting-an-issue" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Reporting an Issue
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#addressing-and-repairing-harm" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Addressing and Repairing Harm
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#scope" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Scope
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#attribution" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Attribution
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -1660,10 +1805,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#our-pledge" class="md-nav__link">
+  <a href="#what-is-boot-storm-testing" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Our Pledge
+        What is Boot Storm Testing?
       
     </span>
   </a>
@@ -1671,33 +1816,55 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#encouraged-behaviors" class="md-nav__link">
+  <a href="#how-it-works" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Encouraged Behaviors
+        How It Works
       
     </span>
   </a>
   
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#restricted-behaviors" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Restricted Behaviors
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Restricted Behaviors">
+    <nav class="md-nav" aria-label="How It Works">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#other-restrictions" class="md-nav__link">
+  <a href="#phase-1-initial-vm-creation" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Other Restrictions
+        Phase 1: Initial VM Creation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#phase-2-shutdown-all-vms" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 2: Shutdown All VMs
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#phase-3-boot-storm-simultaneous-startup" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 3: Boot Storm (Simultaneous Startup)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#phase-4-comparison" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 4: Comparison
       
     </span>
   </a>
@@ -1710,10 +1877,110 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#reporting-an-issue" class="md-nav__link">
+  <a href="#testing-scenarios" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Reporting an Issue
+        Testing Scenarios
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Testing Scenarios">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#single-node-boot-storm" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Single Node Boot Storm
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#multi-node-boot-storm" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Multi-Node Boot Storm
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#boot-storm-against-existing-vms" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Boot Storm Against Existing VMs
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#interpreting-boot-storm-results" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Interpreting Boot Storm Results
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Interpreting Boot Storm Results">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#key-metrics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Key Metrics
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#what-to-look-for" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What to Look For
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#common-bottlenecks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Common Bottlenecks
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#best-practices" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Best Practices
       
     </span>
   </a>
@@ -1721,32 +1988,49 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#addressing-and-repairing-harm" class="md-nav__link">
+  <a href="#advanced-options" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Addressing and Repairing Harm
+        Advanced Options
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Advanced Options">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#namespace-batch-size" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Namespace Batch Size
       
     </span>
   </a>
   
 </li>
-      
-        <li class="md-nav__item">
-  <a href="#scope" class="md-nav__link">
+        
+          <li class="md-nav__item">
+  <a href="#concurrency-control" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Scope
+        Concurrency Control
       
     </span>
   </a>
   
 </li>
+        
+      </ul>
+    </nav>
+  
+</li>
       
         <li class="md-nav__item">
-  <a href="#attribution" class="md-nav__link">
+  <a href="#see-also" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Attribution
+        See Also
       
     </span>
   </a>
@@ -1773,70 +2057,240 @@
   
 
 
-<h1 id="contributor-covenant-30-code-of-conduct">Contributor Covenant 3.0 Code of Conduct</h1>
-<h2 id="our-pledge">Our Pledge</h2>
-<p>We pledge to make our community welcoming, safe, and equitable for all.</p>
-<p>We are committed to fostering an environment that respects and promotes the dignity, rights, and contributions of all individuals, regardless of characteristics including race, ethnicity, caste, color, age, physical characteristics, neurodiversity, disability, sex or gender, gender identity or expression, sexual orientation, language, philosophy or religion, national or social origin, socio-economic position, level of education, or other status. The same privileges of participation are extended to everyone who participates in good faith and in accordance with this Covenant.</p>
-<h2 id="encouraged-behaviors">Encouraged Behaviors</h2>
-<p>While acknowledging differences in social norms, we all strive to meet our community's expectations for positive behavior. We also understand that our words and actions may be interpreted differently than we intend based on culture, background, or native language.</p>
-<p>With these considerations in mind, we agree to behave mindfully toward each other and act in ways that center our shared values, including:</p>
+<h1 id="boot-storm-testing">Boot Storm Testing</h1>
+<p>A "boot storm" occurs when many VMs start simultaneously, creating high
+demand on storage I/O, network resources, compute resources, and hypervisor
+scheduling. This guide explains how to test and understand boot storm
+performance using the <code>--boot-storm</code> flag of <code>virtbench datasource-clone</code>.</p>
+<p><strong>Use Case</strong>: Validate concurrent VM startup performance, simulate disaster
+recovery / power-outage scenarios, and find infrastructure bottlenecks
+before they show up in production.</p>
+<h2 id="what-is-boot-storm-testing">What is Boot Storm Testing?</h2>
+<p>Boot storm testing helps you understand:</p>
 <ol>
-<li>Respecting the <strong>purpose of our community</strong>, our activities, and our ways of gathering.</li>
-<li>Engaging <strong>kindly and honestly</strong> with others.</li>
-<li>Respecting <strong>different viewpoints</strong> and experiences.</li>
-<li><strong>Taking responsibility</strong> for our actions and contributions.</li>
-<li>Gracefully giving and accepting <strong>constructive feedback</strong>.</li>
-<li>Committing to <strong>repairing harm</strong> when it occurs.</li>
-<li>Behaving in other ways that promote and sustain the <strong>well-being of our community</strong>.</li>
+<li><strong>Concurrent Startup Performance</strong>: How your infrastructure handles
+   simultaneous VM startups</li>
+<li><strong>Performance Degradation</strong>: Impact of load on individual VM boot times</li>
+<li><strong>Bottleneck Identification</strong>: Discover limits in storage, network, or
+   compute</li>
+<li><strong>Recovery Time Objectives (RTO)</strong>: Realistic expectations for disaster
+   recovery scenarios</li>
 </ol>
-<h2 id="restricted-behaviors">Restricted Behaviors</h2>
-<p>We agree to restrict the following behaviors in our community. Instances, threats, and promotion of these behaviors are violations of this Code of Conduct.</p>
+<h2 id="how-it-works">How It Works</h2>
+<p>The boot storm test follows a four-phase workflow:</p>
+<h3 id="phase-1-initial-vm-creation">Phase 1: Initial VM Creation</h3>
 <ol>
-<li><strong>Harassment.</strong> Violating explicitly expressed boundaries or engaging in unnecessary personal attention after any clear request to stop.</li>
-<li><strong>Character attacks.</strong> Making insulting, demeaning, or pejorative comments directed at a community member or group of people.</li>
-<li><strong>Stereotyping or discrimination.</strong> Characterizing anyone’s personality or behavior on the basis of immutable identities or traits.</li>
-<li><strong>Sexualization.</strong> Behaving in a way that would generally be considered inappropriately intimate in the context or purpose of the community.</li>
-<li><strong>Violating confidentiality</strong>. Sharing or acting on someone's personal or private information without their permission.</li>
-<li><strong>Endangerment.</strong> Causing, encouraging, or threatening violence or other harm toward any person or group.</li>
-<li>Behaving in other ways that <strong>threaten the well-being</strong> of our community.</li>
+<li>Creates all test namespaces in parallel batches</li>
+<li>Creates and starts all VMs simultaneously</li>
+<li>Measures time to Running state for each VM</li>
+<li>Measures time to network readiness (ping) for each VM</li>
+<li>Displays initial creation performance results</li>
 </ol>
-<h3 id="other-restrictions">Other Restrictions</h3>
+<p>This phase establishes a baseline for comparison.</p>
+<h3 id="phase-2-shutdown-all-vms">Phase 2: Shutdown All VMs</h3>
 <ol>
-<li><strong>Misleading identity.</strong> Impersonating someone else for any reason, or pretending to be someone else to evade enforcement actions.</li>
-<li><strong>Failing to credit sources.</strong> Not properly crediting the sources of content you contribute.</li>
-<li><strong>Promotional materials</strong>. Sharing marketing or other commercial content in a way that is outside the norms of the community.</li>
-<li><strong>Irresponsible communication.</strong> Failing to responsibly present content which includes, links or describes any other restricted behaviors.</li>
+<li>Issues stop commands to all VMs in parallel</li>
+<li>Waits for all VMIs to be deleted (VMs fully stopped)</li>
+<li>Confirms all VMs are in stopped state</li>
 </ol>
-<h2 id="reporting-an-issue">Reporting an Issue</h2>
-<p>Tensions can occur between community members even when they are trying their best to collaborate. Not every conflict represents a code of conduct violation, and this Code of Conduct reinforces encouraged behaviors and norms that can help avoid conflicts and minimize harm.</p>
-<p>When an incident does occur, it is important to report it promptly. To report a possible violation, <strong>Please send your report to hi@portworx.com and provide the details of the possible violation.</strong></p>
-<p>Community Moderators take reports of violations seriously and will make every effort to respond in a timely manner. They will investigate all reports of code of conduct violations, reviewing messages, logs, and recordings, or interviewing witnesses and other participants. Community Moderators will keep investigation and enforcement actions as transparent as possible while prioritizing safety and confidentiality. In order to honor these values, enforcement actions are carried out in private with the involved parties, but communicating to the whole community may be part of a mutually agreed upon resolution.</p>
-<h2 id="addressing-and-repairing-harm">Addressing and Repairing Harm</h2>
-<hr />
-<p>If an investigation by the Community Moderators finds that this Code of Conduct has been violated, the following enforcement ladder may be used to determine how best to repair harm, based on the incident's impact on the individuals involved and the community as a whole. Depending on the severity of a violation, lower rungs on the ladder may be skipped.</p>
-<p>1) Warning
-   1) Event: A violation involving a single incident or series of incidents.
-   2) Consequence: A private, written warning from the Community Moderators.
-   3) Repair: Examples of repair include a private written apology, acknowledgement of responsibility, and seeking clarification on expectations.
-2) Temporarily Limited Activities
-   1) Event: A repeated incidence of a violation that previously resulted in a warning, or the first incidence of a more serious violation.
-   2) Consequence: A private, written warning with a time-limited cooldown period designed to underscore the seriousness of the situation and give the community members involved time to process the incident. The cooldown period may be limited to particular communication channels or interactions with particular community members.
-   3) Repair: Examples of repair may include making an apology, using the cooldown period to reflect on actions and impact, and being thoughtful about re-entering community spaces after the period is over.
-3) Temporary Suspension
-   1) Event: A pattern of repeated violation which the Community Moderators have tried to address with warnings, or a single serious violation.
-   2) Consequence: A private written warning with conditions for return from suspension. In general, temporary suspensions give the person being suspended time to reflect upon their behavior and possible corrective actions.
-   3) Repair: Examples of repair include respecting the spirit of the suspension, meeting the specified conditions for return, and being thoughtful about how to reintegrate with the community when the suspension is lifted.
-4) Permanent Ban
-   1) Event: A pattern of repeated code of conduct violations that other steps on the ladder have failed to resolve, or a violation so serious that the Community Moderators determine there is no way to keep the community safe with this person as a member.
-   2) Consequence: Access to all community spaces, tools, and communication channels is removed. In general, permanent bans should be rarely used, should have strong reasoning behind them, and should only be resorted to if working through other remedies has failed to change the behavior.
-   3) Repair: There is no possible repair in cases of this severity.</p>
-<p>This enforcement ladder is intended as a guideline. It does not limit the ability of Community Managers to use their discretion and judgment, in keeping with the best interests of our community.</p>
-<h2 id="scope">Scope</h2>
-<p>This Code of Conduct applies within all community spaces, and also applies when an individual is officially representing the community in public or other spaces. Examples of representing our community include using an official email address, posting via an official social media account, or acting as an appointed representative at an online or offline event.</p>
-<h2 id="attribution">Attribution</h2>
-<p>This Code of Conduct is adapted from the Contributor Covenant, version 3.0, permanently available at <a href="https://www.contributor-covenant.org/version/3/0/">https://www.contributor-covenant.org/version/3/0/</a>.</p>
-<p>Contributor Covenant is stewarded by the Organization for Ethical Source and licensed under CC BY-SA 4.0. To view a copy of this license, visit <a href="https://creativecommons.org/licenses/by-sa/4.0/">https://creativecommons.org/licenses/by-sa/4.0/</a></p>
-<p>For answers to common questions about Contributor Covenant, see the FAQ at <a href="https://www.contributor-covenant.org/faq">https://www.contributor-covenant.org/faq</a>. Translations are provided at <a href="https://www.contributor-covenant.org/translations">https://www.contributor-covenant.org/translations</a>. Additional enforcement and community guideline resources can be found at <a href="https://www.contributor-covenant.org/resources">https://www.contributor-covenant.org/resources</a>. The enforcement ladder was inspired by the work of <a href="https://github.com/mozilla/inclusion">Mozilla’s code of conduct team</a>.</p>
+<p>This ensures a clean starting point for the boot storm test.</p>
+<h3 id="phase-3-boot-storm-simultaneous-startup">Phase 3: Boot Storm (Simultaneous Startup)</h3>
+<ol>
+<li>Issues start commands to ALL VMs at once</li>
+<li>Creates maximum load on infrastructure</li>
+<li>Measures time to Running state for each VM</li>
+<li>Measures time to network readiness for each VM</li>
+<li>Displays boot storm performance results</li>
+</ol>
+<p>This is the actual boot storm test.</p>
+<h3 id="phase-4-comparison">Phase 4: Comparison</h3>
+<p>Compare initial creation vs boot storm metrics to understand:</p>
+<ul>
+<li>Performance differences between cold start and warm start</li>
+<li>Impact of concurrent operations</li>
+<li>Storage backend behavior under load</li>
+<li>Infrastructure capacity limits</li>
+</ul>
+<h2 id="testing-scenarios">Testing Scenarios</h2>
+<h3 id="single-node-boot-storm">Single Node Boot Storm</h3>
+<p>Tests VM startup performance on a single node when powering on multiple VMs
+simultaneously.</p>
+<p><strong>Use Case</strong>: Validates node-level capacity (e.g., how many VMs can a single
+node handle during boot storm).</p>
+<pre><code class="language-bash"># Run test on a single node (auto-selected) with your storage class
+virtbench datasource-clone \
+  --start 1 \
+  --end 50 \
+  --vm-name VM-NAME \
+  --namespace-prefix NS-PREFIX \
+  --storage-class YOUR-STORAGE-CLASS \
+  --single-node \
+  --boot-storm \
+  --save-results \
+  --storage-driver STORAGE-DRIVER
+
+# Or specify a specific node
+virtbench datasource-clone \
+  --start 1 \
+  --end 50 \
+  --vm-name VM-NAME \
+  --namespace-prefix NS-PREFIX \
+  --storage-class YOUR-STORAGE-CLASS \
+  --single-node \
+  --node-name worker-node-1 \
+  --boot-storm \
+  --save-results \
+  --storage-driver STORAGE-DRIVER
+</code></pre>
+<p><strong>What it does</strong>:</p>
+<ol>
+<li>Selects a single node (random or specified with <code>--node-name</code>)</li>
+<li>Creates and starts all VMs on that node (initial test)</li>
+<li>Stops all VMs and waits for complete shutdown</li>
+<li>Starts all VMs simultaneously on the same node (boot storm)</li>
+<li>Measures time to Running state and time to ping for each VM</li>
+<li>Provides separate statistics for initial creation and boot storm</li>
+</ol>
+<h3 id="multi-node-boot-storm">Multi-Node Boot Storm</h3>
+<p>Tests VM startup performance across all nodes when powering on multiple VMs
+simultaneously.</p>
+<p><strong>Use Case</strong>: Validates cluster-wide performance under boot storm conditions
+(e.g., after maintenance, power outage recovery).</p>
+<pre><code class="language-bash">virtbench datasource-clone \
+  --start 1 \
+  --end 100 \
+  --vm-name VM-NAME \
+  --namespace-prefix NS-PREFIX \
+  --storage-class YOUR-STORAGE-CLASS \
+  --boot-storm \
+  --save-results \
+  --storage-driver STORAGE-DRIVER
+</code></pre>
+<p><strong>What it does</strong>:</p>
+<ol>
+<li>Creates and starts all VMs (distributed across nodes)</li>
+<li>Stops all VMs and waits for complete shutdown</li>
+<li>Starts all VMs simultaneously (boot storm)</li>
+<li>Measures time to Running state and time to ping for each VM</li>
+<li>Provides separate statistics for initial creation and boot storm</li>
+</ol>
+<h3 id="boot-storm-against-existing-vms">Boot Storm Against Existing VMs</h3>
+<p>Use <code>--skip-vm-creation</code> with <code>--boot-storm</code> to run the storm against VMs
+that are already deployed. This skips Phase 1 entirely and goes straight to
+stop &rarr; mass start:</p>
+<pre><code class="language-bash">virtbench datasource-clone \
+  --start 1 \
+  --end 100 \
+  --vm-name VM-NAME \
+  --namespace-prefix NS-PREFIX \
+  --boot-storm \
+  --skip-vm-creation \
+  --save-results \
+  --storage-driver STORAGE-DRIVER
+</code></pre>
+<p>Saved boot-storm runs are written under:</p>
+<pre><code class="language-text">results/{storage-driver}/{num-disks}-disk/{timestamp}_{namespace-prefix}_{start}-{end}/
+</code></pre>
+<p>The run log is saved in the same folder as the boot-storm JSON and CSV files.</p>
+<h2 id="interpreting-boot-storm-results">Interpreting Boot Storm Results</h2>
+<h3 id="key-metrics">Key Metrics</h3>
+<ul>
+<li><strong>Time to Running</strong>: How long until VM reaches Running state</li>
+<li><strong>Time to Ping</strong>: How long until VM is network-reachable</li>
+<li><strong>Average Times</strong>: Mean performance across all VMs</li>
+<li><strong>Max Times</strong>: Worst-case performance (important for SLA planning)</li>
+<li><strong>Success Rate</strong>: Percentage of VMs that successfully started</li>
+</ul>
+<h3 id="what-to-look-for">What to Look For</h3>
+<p><strong>Good performance indicators:</strong></p>
+<ul>
+<li>Boot storm times similar to initial creation times</li>
+<li>Consistent performance across all VMs</li>
+<li>High success rate (100%)</li>
+<li>Predictable max times</li>
+</ul>
+<p><strong>Performance issues:</strong></p>
+<ul>
+<li>Boot storm times significantly higher than initial creation</li>
+<li>Wide variance in boot times</li>
+<li>VMs failing to start</li>
+<li>Increasing times as more VMs start</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th>Performance Level</th>
+<th>Boot Storm vs Initial</th>
+<th>Recommendation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Good</td>
+<td>1.5-2x slower</td>
+<td>Infrastructure handles load well</td>
+</tr>
+<tr>
+<td>Concerning</td>
+<td>3x slower</td>
+<td>Investigate bottlenecks</td>
+</tr>
+<tr>
+<td>Critical</td>
+<td>5x+ slower</td>
+<td>Major infrastructure issues</td>
+</tr>
+</tbody>
+</table>
+<h3 id="common-bottlenecks">Common Bottlenecks</h3>
+<ol>
+<li><strong>Storage I/O</strong>: High disk read/write contention — increase storage
+   IOPS, use a faster storage tier, or enable caching</li>
+<li><strong>Network</strong>: Bandwidth saturation during image pulls; check DHCP server
+   capacity</li>
+<li><strong>Compute</strong>: CPU/memory exhaustion on nodes — add more worker nodes or
+   increase node resources</li>
+<li><strong>Hypervisor</strong>: KubeVirt scheduling delays</li>
+</ol>
+<h2 id="best-practices">Best Practices</h2>
+<ol>
+<li><strong>Start Small</strong>: Begin with 10-20 VMs to establish baseline</li>
+<li><strong>Incremental Testing</strong>: Gradually increase VM count to find limits</li>
+<li><strong>Monitor Resources</strong>: Watch node CPU, memory, and storage I/O during
+   tests</li>
+<li><strong>Multiple Runs</strong>: Run tests multiple times for consistent results</li>
+<li><strong>Save Results</strong>: Always use <code>--save-results</code> to track performance over
+   time</li>
+<li><strong>Clean Environment</strong>: Ensure cluster is not under load before testing</li>
+</ol>
+<h2 id="advanced-options">Advanced Options</h2>
+<h3 id="namespace-batch-size">Namespace Batch Size</h3>
+<p>Control how many namespaces are created in parallel:</p>
+<pre><code class="language-bash">virtbench datasource-clone \
+  --start 1 \
+  --end 100 \
+  --storage-class YOUR-STORAGE-CLASS \
+  --boot-storm \
+  --namespace-batch-size 50
+</code></pre>
+<h3 id="concurrency-control">Concurrency Control</h3>
+<p><code>--concurrency</code> caps the worker-thread pool used to issue VM stop/start
+commands and to monitor each VM's progression to Running and ping-ready.
+Increase it for large-scale tests so the boot storm is not throttled by the
+client:</p>
+<pre><code class="language-bash">virtbench datasource-clone \
+  --start 1 \
+  --end 200 \
+  --storage-class YOUR-STORAGE-CLASS \
+  --boot-storm \
+  --concurrency 200
+</code></pre>
+<h2 id="see-also">See Also</h2>
+<ul>
+<li><a href="../datasource-clone/">VM Creation (DataSource Clone)</a> — Full VM creation guide</li>
+<li><a href="../../configuration/">Configuration Options</a> — All available options</li>
+<li><a href="../../output-and-results/">Output and Results</a> — Understanding test output</li>
+</ul>
 
 
 
@@ -1886,10 +2340,10 @@
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": [], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../../../..", "features": [], "search": "../../../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      <script src="../../../../assets/javascripts/bundle.79ae519e.min.js"></script>
       
     
   </body>

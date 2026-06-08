@@ -12,31 +12,31 @@
         <meta name="author" content="KubeVirt Benchmark Suite Contributors">
       
       
-        <link rel="canonical" href="https://portworx.github.io/kubevirt-benchmark/reference/user-guide/results-dashboard/">
+        <link rel="canonical" href="https://portworx.github.io/kubevirt-benchmark/reference/user-guide/test-scenarios/elbencho-benchmark/">
       
       
-        <link rel="prev" href="../output-and-results/">
+        <link rel="prev" href="../fio-benchmark/">
       
       
-        <link rel="next" href="../cleanup-guide/">
+        <link rel="next" href="../vm-ops/overview/">
       
       
         
       
       
-      <link rel="icon" href="../../../favicon.png">
+      <link rel="icon" href="../../../../favicon.png">
       <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
     
     
       
-        <title>Results Dashboard - virtbench</title>
+        <title>Elbencho Benchmark - virtbench</title>
       
     
     
-      <link rel="stylesheet" href="../../../assets/stylesheets/main.484c7ddc.min.css">
+      <link rel="stylesheet" href="../../../../assets/stylesheets/main.484c7ddc.min.css">
       
         
-        <link rel="stylesheet" href="../../../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../../../../assets/stylesheets/palette.ab4e12ef.min.css">
       
       
 
@@ -55,9 +55,9 @@
       
     
     
-      <link rel="stylesheet" href="../../../stylesheets/extra.css">
+      <link rel="stylesheet" href="../../../../stylesheets/extra.css">
     
-    <script>__md_scope=new URL("../../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("../../../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
 
@@ -82,7 +82,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#results-dashboard" class="md-skip">
+        <a href="#elbencho-storage-io-benchmark" class="md-skip">
           Skip to content
         </a>
       
@@ -98,9 +98,9 @@
 
 <header class="md-header md-header--shadow" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="../../.." title="virtbench" class="md-header__button md-logo" aria-label="virtbench" data-md-component="logo">
+    <a href="../../../.." title="virtbench" class="md-header__button md-logo" aria-label="virtbench" data-md-component="logo">
       
-  <img src="../../../virtbench-transparent.png" alt="logo">
+  <img src="../../../../virtbench-transparent.png" alt="logo">
 
     </a>
     <label class="md-header__button md-icon" for="__drawer">
@@ -117,7 +117,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Results Dashboard
+              Elbencho Benchmark
             
           </span>
         </div>
@@ -219,9 +219,9 @@
 
 <nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="../../.." title="virtbench" class="md-nav__button md-logo" aria-label="virtbench" data-md-component="logo">
+    <a href="../../../.." title="virtbench" class="md-nav__button md-logo" aria-label="virtbench" data-md-component="logo">
       
-  <img src="../../../virtbench-transparent.png" alt="logo">
+  <img src="../../../../virtbench-transparent.png" alt="logo">
 
     </a>
     virtbench
@@ -295,7 +295,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../.." class="md-nav__link">
+      <a href="../../../.." class="md-nav__link">
         
   
   
@@ -323,7 +323,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../install/" class="md-nav__link">
+      <a href="../../../../install/" class="md-nav__link">
         
   
   
@@ -351,7 +351,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../release-notes/" class="md-nav__link">
+      <a href="../../../../release-notes/" class="md-nav__link">
         
   
   
@@ -379,7 +379,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../license/" class="md-nav__link">
+      <a href="../../../../license/" class="md-nav__link">
         
   
   
@@ -463,7 +463,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../repository-structure/" class="md-nav__link">
+      <a href="../../repository-structure/" class="md-nav__link">
         
   
   
@@ -537,18 +537,20 @@
                 
   
   
+    
   
   
+  
     
     
     
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_2_1" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_2_1" checked>
         
           
           <label class="md-nav__link" for="__nav_2_2_1" id="__nav_2_2_1_label" tabindex="0">
@@ -569,7 +571,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_2_2_1_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_2_2_1_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_2_2_1">
             <span class="md-nav__icon md-icon"></span>
             
@@ -587,7 +589,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../test-scenarios/overview/" class="md-nav__link">
+      <a href="../overview/" class="md-nav__link">
         
   
   
@@ -615,7 +617,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../test-scenarios/datasource-clone/" class="md-nav__link">
+      <a href="../datasource-clone/" class="md-nav__link">
         
   
   
@@ -643,7 +645,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../test-scenarios/boot-storm/" class="md-nav__link">
+      <a href="../boot-storm/" class="md-nav__link">
         
   
   
@@ -671,7 +673,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../test-scenarios/migration/" class="md-nav__link">
+      <a href="../migration/" class="md-nav__link">
         
   
   
@@ -699,7 +701,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../test-scenarios/chaos-benchmark/" class="md-nav__link">
+      <a href="../chaos-benchmark/" class="md-nav__link">
         
   
   
@@ -727,7 +729,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../test-scenarios/failure-recovery/" class="md-nav__link">
+      <a href="../failure-recovery/" class="md-nav__link">
         
   
   
@@ -755,7 +757,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../test-scenarios/cluster-validation/" class="md-nav__link">
+      <a href="../cluster-validation/" class="md-nav__link">
         
   
   
@@ -783,7 +785,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../test-scenarios/fio-benchmark/" class="md-nav__link">
+      <a href="../fio-benchmark/" class="md-nav__link">
         
   
   
@@ -808,10 +810,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../test-scenarios/elbencho-benchmark/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Elbencho Benchmark
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -827,6 +856,253 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#how-it-works" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How It Works
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#prerequisites" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Prerequisites
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#basic-usage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Basic Usage
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Basic Usage">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#virtbench-cli" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        virtbench CLI
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-by-step-workflow" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step-by-Step Workflow
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#actions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Actions
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#configuration-options" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Configuration Options
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Configuration Options">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#required" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Required
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#deploy-run-all" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Deploy / run-all
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#workload" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Workload
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#results" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Results
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ssh" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SSH
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#execution" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Execution
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#workload-mode-examples" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Workload Mode Examples
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#results_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Results
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Results">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#output-structure" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Output Structure
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#aggregated-json" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Aggregated JSON
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#view-in-dashboard" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        View in Dashboard
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#troubleshooting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Troubleshooting
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -886,7 +1162,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../test-scenarios/vm-ops/overview/" class="md-nav__link">
+      <a href="../vm-ops/overview/" class="md-nav__link">
         
   
   
@@ -914,7 +1190,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../test-scenarios/vm-ops/drain-nodes/" class="md-nav__link">
+      <a href="../vm-ops/drain-nodes/" class="md-nav__link">
         
   
   
@@ -942,7 +1218,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../test-scenarios/vm-ops/rebalance-vms/" class="md-nav__link">
+      <a href="../vm-ops/rebalance-vms/" class="md-nav__link">
         
   
   
@@ -970,7 +1246,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../test-scenarios/vm-ops/vm-snapshot/" class="md-nav__link">
+      <a href="../vm-ops/vm-snapshot/" class="md-nav__link">
         
   
   
@@ -998,7 +1274,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../test-scenarios/vm-ops/run-blkdiscard/" class="md-nav__link">
+      <a href="../vm-ops/run-blkdiscard/" class="md-nav__link">
         
   
   
@@ -1026,7 +1302,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../test-scenarios/vm-ops/power-toggle-vms/" class="md-nav__link">
+      <a href="../vm-ops/power-toggle-vms/" class="md-nav__link">
         
   
   
@@ -1070,7 +1346,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../vm-template-guide/" class="md-nav__link">
+      <a href="../../vm-template-guide/" class="md-nav__link">
         
   
   
@@ -1098,7 +1374,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../configuration/" class="md-nav__link">
+      <a href="../../configuration/" class="md-nav__link">
         
   
   
@@ -1126,7 +1402,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../output-and-results/" class="md-nav__link">
+      <a href="../../output-and-results/" class="md-nav__link">
         
   
   
@@ -1151,37 +1427,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Results Dashboard
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../../results-dashboard/" class="md-nav__link">
         
   
   
@@ -1197,375 +1446,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#overview" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Overview
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#generating-the-dashboard" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Generating the Dashboard
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Generating the Dashboard">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#basic-usage" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Basic Usage
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#custom-configuration" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Custom Configuration
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#dashboard-options" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Dashboard Options
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#dashboard-features" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Dashboard Features
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Dashboard Features">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#vm-creation-performance" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        VM Creation Performance
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#boot-storm-performance" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Boot Storm Performance
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#live-migration-performance" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Live Migration Performance
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#chaos-benchmark-results" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Chaos Benchmark Results
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#cluster-information" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Cluster Information
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#manual-results" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Manual Results
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#dashboard-sections" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Dashboard Sections
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Dashboard Sections">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#1-cluster-overview" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        1. Cluster Overview
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#2-test-summary" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        2. Test Summary
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#3-vm-creation-results" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        3. VM Creation Results
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#4-boot-storm-results" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        4. Boot Storm Results
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#5-migration-results" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        5. Migration Results
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#6-chaos-benchmark-results" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        6. Chaos Benchmark Results
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#using-the-dashboard" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Using the Dashboard
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Using the Dashboard">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#navigation" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Navigation
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#filtering-results" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Filtering Results
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#exporting-data" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Exporting Data
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#best-practices" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Best Practices
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#troubleshooting" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Troubleshooting
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Troubleshooting">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#no-results-found" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        No results found
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#dashboard-generation-fails" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Dashboard generation fails
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#charts-not-displaying" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Charts not displaying
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#see-also" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        See Also
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -1578,7 +1458,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../cleanup-guide/" class="md-nav__link">
+      <a href="../../cleanup-guide/" class="md-nav__link">
         
   
   
@@ -1614,7 +1494,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../troubleshooting/" class="md-nav__link">
+      <a href="../../../troubleshooting/" class="md-nav__link">
         
   
   
@@ -1642,7 +1522,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../best-practices/" class="md-nav__link">
+      <a href="../../../best-practices/" class="md-nav__link">
         
   
   
@@ -1724,7 +1604,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../community/" class="md-nav__link">
+      <a href="../../../../community/" class="md-nav__link">
         
   
   
@@ -1752,7 +1632,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../community/contributing/" class="md-nav__link">
+      <a href="../../../../community/contributing/" class="md-nav__link">
         
   
   
@@ -1836,7 +1716,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../community/support/" class="md-nav__link">
+      <a href="../../../../community/support/" class="md-nav__link">
         
   
   
@@ -1864,7 +1744,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../community/code-of-conduct/" class="md-nav__link">
+      <a href="../../../../community/code-of-conduct/" class="md-nav__link">
         
   
   
@@ -1919,10 +1799,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#overview" class="md-nav__link">
+  <a href="#how-it-works" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Overview
+        How It Works
       
     </span>
   </a>
@@ -1930,18 +1810,17 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#generating-the-dashboard" class="md-nav__link">
+  <a href="#prerequisites" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Generating the Dashboard
+        Prerequisites
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Generating the Dashboard">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
+</li>
+      
+        <li class="md-nav__item">
   <a href="#basic-usage" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1950,85 +1829,14 @@
     </span>
   </a>
   
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#custom-configuration" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Custom Configuration
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#dashboard-options" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Dashboard Options
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#dashboard-features" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Dashboard Features
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Dashboard Features">
+    <nav class="md-nav" aria-label="Basic Usage">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#vm-creation-performance" class="md-nav__link">
+  <a href="#virtbench-cli" class="md-nav__link">
     <span class="md-ellipsis">
       
-        VM Creation Performance
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#boot-storm-performance" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Boot Storm Performance
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#live-migration-performance" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Live Migration Performance
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#chaos-benchmark-results" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Chaos Benchmark Results
+        virtbench CLI
       
     </span>
   </a>
@@ -2041,10 +1849,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#cluster-information" class="md-nav__link">
+  <a href="#step-by-step-workflow" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Cluster Information
+        Step-by-Step Workflow
       
     </span>
   </a>
@@ -2052,10 +1860,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#manual-results" class="md-nav__link">
+  <a href="#actions" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Manual Results
+        Actions
       
     </span>
   </a>
@@ -2063,22 +1871,22 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#dashboard-sections" class="md-nav__link">
+  <a href="#configuration-options" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Dashboard Sections
+        Configuration Options
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Dashboard Sections">
+    <nav class="md-nav" aria-label="Configuration Options">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#1-cluster-overview" class="md-nav__link">
+  <a href="#required" class="md-nav__link">
     <span class="md-ellipsis">
       
-        1. Cluster Overview
+        Required
       
     </span>
   </a>
@@ -2086,10 +1894,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#2-test-summary" class="md-nav__link">
+  <a href="#deploy-run-all" class="md-nav__link">
     <span class="md-ellipsis">
       
-        2. Test Summary
+        Deploy / run-all
       
     </span>
   </a>
@@ -2097,10 +1905,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#3-vm-creation-results" class="md-nav__link">
+  <a href="#workload" class="md-nav__link">
     <span class="md-ellipsis">
       
-        3. VM Creation Results
+        Workload
       
     </span>
   </a>
@@ -2108,10 +1916,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#4-boot-storm-results" class="md-nav__link">
+  <a href="#results" class="md-nav__link">
     <span class="md-ellipsis">
       
-        4. Boot Storm Results
+        Results
       
     </span>
   </a>
@@ -2119,10 +1927,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#5-migration-results" class="md-nav__link">
+  <a href="#ssh" class="md-nav__link">
     <span class="md-ellipsis">
       
-        5. Migration Results
+        SSH
       
     </span>
   </a>
@@ -2130,10 +1938,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#6-chaos-benchmark-results" class="md-nav__link">
+  <a href="#execution" class="md-nav__link">
     <span class="md-ellipsis">
       
-        6. Chaos Benchmark Results
+        Execution
       
     </span>
   </a>
@@ -2146,22 +1954,33 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#using-the-dashboard" class="md-nav__link">
+  <a href="#workload-mode-examples" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Using the Dashboard
+        Workload Mode Examples
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Using the Dashboard">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#results_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Results
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Results">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#navigation" class="md-nav__link">
+  <a href="#output-structure" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Navigation
+        Output Structure
       
     </span>
   </a>
@@ -2169,10 +1988,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#filtering-results" class="md-nav__link">
+  <a href="#aggregated-json" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Filtering Results
+        Aggregated JSON
       
     </span>
   </a>
@@ -2180,10 +1999,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#exporting-data" class="md-nav__link">
+  <a href="#view-in-dashboard" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Exporting Data
+        View in Dashboard
       
     </span>
   </a>
@@ -2192,17 +2011,6 @@
         
       </ul>
     </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#best-practices" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Best Practices
-      
-    </span>
-  </a>
   
 </li>
       
@@ -2211,56 +2019,6 @@
     <span class="md-ellipsis">
       
         Troubleshooting
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Troubleshooting">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#no-results-found" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        No results found
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#dashboard-generation-fails" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Dashboard generation fails
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#charts-not-displaying" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Charts not displaying
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#see-also" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        See Also
       
     </span>
   </a>
@@ -2287,212 +2045,386 @@
   
 
 
-<h1 id="results-dashboard">Results Dashboard</h1>
-<p>The virtbench suite includes an interactive HTML dashboard generator to visualize and analyze your performance test results.</p>
-<h2 id="overview">Overview</h2>
-<p>After running tests with <code>--save-results</code>, you can generate a rich, interactive dashboard that provides:</p>
+<h1 id="elbencho-storage-io-benchmark">Elbencho Storage I/O Benchmark</h1>
+<p>Manages <a href="https://github.com/breuner/elbencho">elbencho</a> storage benchmark workloads on VMs across many namespaces. Supports deploying VMs, running rate-limited or max-throughput workloads, and gathering aggregated results.</p>
+<p><strong>Use Case</strong>: Sustain controlled IO load (constant IOPS or read/write mix at line rate) across many VMs and measure aggregated IOPS, throughput, and latency.</p>
+<h2 id="how-it-works">How It Works</h2>
+<p>Each VM runs an <code>elbencho</code> systemd service against one or more block devices. The script drives the workload by SSHing into each VM through a helper pod and supports two workload modes:</p>
 <ul>
-<li><strong>Multi-level Organization</strong>: Results organized by Storage Driver → Disk Count → VM Size</li>
-<li><strong>Interactive Charts</strong>: Plotly-based bar charts showing duration metrics</li>
-<li><strong>Detailed Tables</strong>: Sortable and searchable DataTables for all test results</li>
-<li><strong>Cluster Information</strong>: Display cluster metadata and configuration</li>
-<li><strong>Manual Results</strong>: Include manually collected test results</li>
-<li><strong>Time-series Visualization</strong>: Track performance trends over time</li>
+<li><strong>IOPS mode</strong> (<code>--iops</code>) - Fixed total IOPS, split 50/50 between read and write.</li>
+<li><strong>RWMIX mode</strong> (<code>--rwmixpct</code>) - Maximum throughput at a specified read/write ratio.</li>
 </ul>
-<h2 id="generating-the-dashboard">Generating the Dashboard</h2>
-<h3 id="basic-usage">Basic Usage</h3>
-<p>Generate the dashboard from the saved <code>results/</code> directory after benchmark
-runs complete. This will:
-1. Scan the <code>results/</code> directory for test results
-2. Process all results from the last 15 days
-3. Generate <code>results_dashboard.html</code> in the current directory</p>
-<h3 id="custom-configuration">Custom Configuration</h3>
-<p>Use the dashboard options below to select the results directory, time range,
-cluster information file, manual results file, and output HTML path.</p>
-<h2 id="dashboard-options">Dashboard Options</h2>
+<p>The full workflow (<code>run-all</code>) deploys VMs, starts the workload, waits for <code>--duration</code> seconds, gathers results, and optionally cleans up.</p>
+<h2 id="prerequisites">Prerequisites</h2>
+<ul>
+<li><code>kubectl</code> configured against the target cluster.</li>
+<li>An SSH helper pod with <code>sshpass</code> deployed in the cluster (default: <code>ssh-test-pod</code> in <code>default</code>).</li>
+<li>A VM template whose image has <code>elbencho</code> installed at <code>/root/elbencho/bin/elbencho</code> and a configured systemd service. Use any KubeVirt <code>VirtualMachine</code> template that exposes the disks you want to drive.</li>
+<li>The VM image must allow SSH login as the <code>root</code> user with password authentication (default credentials: <code>--vm-user root</code> / <code>--vm-password Password1</code>), and <code>root</code> must be able to run <code>elbencho</code> directly (the binary on <code>PATH</code> or invokable at <code>/root/elbencho/bin/elbencho</code>).</li>
+</ul>
+<h2 id="basic-usage">Basic Usage</h2>
+<h3 id="virtbench-cli">virtbench CLI</h3>
+<pre><code class="language-bash"># Full workflow: deploy 10 VMs, run for 5 minutes, gather + save results
+virtbench elbencho \
+  --namespace-prefix perf-test --start 1 --end 10 \
+  --vm-name rhel-elbencho-1 --action run-all \
+  --vm-template examples/vm-templates/YOUR-ELBENCHO-VM.yaml \
+  --iops 1000 --block-size 4K --duration 300 \
+  --save-results --storage-driver portworx-3.6
+
+# RWMIX mode: 70% read at max throughput for 10 minutes
+virtbench elbencho \
+  --namespace-prefix perf-test --start 1 --end 10 \
+  --vm-name rhel-elbencho-1 --action run-all \
+  --vm-template examples/vm-templates/YOUR-ELBENCHO-VM.yaml \
+  --rwmixpct 70 --block-size 32K --iodepth 2 --threads 12 \
+  --duration 600 --save-results
+</code></pre>
+<h2 id="step-by-step-workflow">Step-by-Step Workflow</h2>
+<pre><code class="language-bash"># 1. Deploy VMs
+virtbench elbencho -p perf-test -s 1 -e 10 -n rhel-elbencho-1 -a deploy \
+  --vm-template examples/vm-templates/YOUR-ELBENCHO-VM.yaml
+
+# 2. Check status
+virtbench elbencho -p perf-test -s 1 -e 10 -n rhel-elbencho-1 -a status
+
+# 3. Start a workload (1000 IOPS total, 4K blocks)
+virtbench elbencho -p perf-test -s 1 -e 10 -n rhel-elbencho-1 \
+  -a change-workload --iops 1000 --block-size 4K
+
+# 4. Switch workload mid-run (70% read at max throughput)
+virtbench elbencho -p perf-test -s 1 -e 10 -n rhel-elbencho-1 \
+  -a change-workload --rwmixpct 70 --block-size 32K --threads 12
+
+# 5. Stop IO and gather results
+virtbench elbencho -p perf-test -s 1 -e 10 -n rhel-elbencho-1 \
+  -a gather-results --save-results --storage-driver portworx-3.6
+
+# 6. Cleanup VMs and namespaces
+virtbench elbencho -p perf-test -s 1 -e 10 -n rhel-elbencho-1 -a cleanup
+</code></pre>
+<h2 id="actions">Actions</h2>
+<table>
+<thead>
+<tr>
+<th>Action</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>run-all</code></td>
+<td>Full workflow: deploy + workload + wait + gather (requires <code>--duration</code>)</td>
+</tr>
+<tr>
+<td><code>deploy</code></td>
+<td>Deploy VMs (requires <code>--vm-template</code>)</td>
+</tr>
+<tr>
+<td><code>start</code></td>
+<td>Start the default 1 IOPS systemd service</td>
+</tr>
+<tr>
+<td><code>stop</code></td>
+<td>Stop the systemd service</td>
+</tr>
+<tr>
+<td><code>restart</code></td>
+<td>Restart the systemd service</td>
+</tr>
+<tr>
+<td><code>status</code></td>
+<td>Check elbencho service status</td>
+</tr>
+<tr>
+<td><code>stop-all</code></td>
+<td>Stop all elbencho processes (service + manual)</td>
+</tr>
+<tr>
+<td><code>change-workload</code></td>
+<td>Stop current workload and start a new one</td>
+</tr>
+<tr>
+<td><code>gather-results</code></td>
+<td>Stop IO and collect results from all VMs</td>
+</tr>
+<tr>
+<td><code>cleanup</code></td>
+<td>Delete VMs and namespaces</td>
+</tr>
+</tbody>
+</table>
+<h2 id="configuration-options">Configuration Options</h2>
+<h3 id="required">Required</h3>
 <table>
 <thead>
 <tr>
 <th>Option</th>
 <th>Description</th>
-<th>Default</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><code>--days</code></td>
-<td>Number of days of results to include</td>
-<td>15</td>
+<td><code>--namespace-prefix</code>, <code>-p</code></td>
+<td>Namespace prefix (e.g., <code>perf-test</code> &rarr; <code>perf-test-1</code>, <code>perf-test-2</code>, ...)</td>
 </tr>
 <tr>
-<td><code>--base-dir</code></td>
-<td>Base directory containing test results</td>
-<td><code>results</code></td>
+<td><code>--start</code>, <code>-s</code></td>
+<td>Start namespace index</td>
 </tr>
 <tr>
-<td><code>--cluster-info</code></td>
-<td>Path to cluster information YAML file</td>
-<td><code>dashboard/cluster_info.yaml</code></td>
+<td><code>--end</code>, <code>-e</code></td>
+<td>End namespace index</td>
 </tr>
 <tr>
-<td><code>--manual-results</code></td>
-<td>Path to manual results YAML file</td>
-<td><code>dashboard/manual_results.yaml</code></td>
+<td><code>--vm-name</code>, <code>-n</code></td>
+<td>VM name in each namespace</td>
 </tr>
 <tr>
-<td><code>--output-html</code></td>
-<td>Output HTML file path</td>
-<td><code>results_dashboard.html</code></td>
+<td><code>--action</code>, <code>-a</code></td>
+<td>Action to perform (see table above)</td>
 </tr>
 </tbody>
 </table>
-<h2 id="dashboard-features">Dashboard Features</h2>
-<h3 id="vm-creation-performance">VM Creation Performance</h3>
-<ul>
-<li><strong>Charts</strong>: Bar charts showing average time to Running and time to Ping</li>
-<li><strong>Tables</strong>: Detailed results for each test run with sortable columns</li>
-<li><strong>Metrics</strong>: Success rate, average times, max times, total VMs tested</li>
-</ul>
-<h3 id="boot-storm-performance">Boot Storm Performance</h3>
-<ul>
-<li><strong>Comparison Charts</strong>: Initial creation vs boot storm performance</li>
-<li><strong>Impact Analysis</strong>: Performance degradation metrics</li>
-<li><strong>Statistics</strong>: Separate metrics for initial and boot storm phases</li>
-</ul>
-<h3 id="live-migration-performance">Live Migration Performance</h3>
-<ul>
-<li><strong>Duration Charts</strong>: Migration time analysis</li>
-<li><strong>Success Rates</strong>: Migration completion statistics</li>
-<li><strong>Detailed Metrics</strong>: Observed vs VMIM timestamps, downtime measurements</li>
-</ul>
-<h3 id="chaos-benchmark-results">Chaos Benchmark Results</h3>
-<ul>
-<li><strong>Chaos Operations</strong>: Concurrent VM operations and their results</li>
-<li><strong>Phase Analysis</strong>: Performance of each phase (create, resize, restart, snapshot)</li>
-<li><strong>Iteration Metrics</strong>: Results across multiple iterations</li>
-</ul>
-<h2 id="cluster-information">Cluster Information</h2>
-<p>Create a <code>cluster_info.yaml</code> file to include cluster metadata in the dashboard:</p>
-<pre><code class="language-yaml">cluster_name: &quot;Production OCP Cluster&quot;
-ocp_version: &quot;4.14.8&quot;
-kubevirt_version: &quot;4.14.2&quot;
-storage_backend: &quot;Portworx Enterprise&quot;
-storage_driver: &quot;portworx-3.6&quot;
-node_count: 6
-worker_nodes:
-  - name: &quot;worker-1&quot;
-    cpu: &quot;32 cores&quot;
-    memory: &quot;128 GB&quot;
-    storage: &quot;2TB NVMe&quot;
-  - name: &quot;worker-2&quot;
-    cpu: &quot;32 cores&quot;
-    memory: &quot;128 GB&quot;
-    storage: &quot;2TB NVMe&quot;
-network: &quot;10 Gbps&quot;
-notes: &quot;Production cluster with HA configuration&quot;
-</code></pre>
-<h2 id="manual-results">Manual Results</h2>
-<p>Include manually collected results in <code>manual_results.yaml</code>:</p>
-<pre><code class="language-yaml">manual_tests:
-  - test_type: &quot;vm_creation&quot;
-    date: &quot;2024-01-15&quot;
-    storage_driver: &quot;portworx-3.6&quot;
-    disk_count: 10
-    vm_count: 100
-    avg_time_to_running: 12.5
-    avg_time_to_ping: 18.3
-    notes: &quot;Baseline test before upgrade&quot;
+<h3 id="deploy-run-all">Deploy / run-all</h3>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--vm-template</code></td>
+<td>(required for <code>deploy</code>/<code>run-all</code>)</td>
+<td>Path to VM template YAML</td>
+</tr>
+<tr>
+<td><code>--secret-yaml</code></td>
+<td>(none)</td>
+<td>Path to cloud-init secret YAML</td>
+</tr>
+<tr>
+<td><code>--ping-timeout</code></td>
+<td><code>300</code></td>
+<td>Seconds to wait for VMs to become reachable</td>
+</tr>
+</tbody>
+</table>
+<h3 id="workload">Workload</h3>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--iops</code></td>
+<td><code>0</code></td>
+<td>IOPS mode: total IOPS (must be even, split 50/50 read/write). Mutually exclusive with <code>--rwmixpct</code>.</td>
+</tr>
+<tr>
+<td><code>--rwmixpct</code></td>
+<td><code>0</code></td>
+<td>RWMIX mode: read percentage (0-100), max throughput</td>
+</tr>
+<tr>
+<td><code>--block-size</code></td>
+<td><code>4K</code></td>
+<td>Block size (e.g., <code>4K</code>, <code>32K</code>, <code>1M</code>)</td>
+</tr>
+<tr>
+<td><code>--num-disks</code></td>
+<td><code>0</code></td>
+<td>Number of disks (0 = all available)</td>
+</tr>
+<tr>
+<td><code>--iodepth</code></td>
+<td><code>1</code></td>
+<td>IO depth per thread</td>
+</tr>
+<tr>
+<td><code>--threads</code></td>
+<td><code>0</code></td>
+<td>Threads per VM (0 = same as <code>num-disks</code>)</td>
+</tr>
+<tr>
+<td><code>--duration</code></td>
+<td><code>0</code></td>
+<td>Duration in seconds (0 = infinite; <strong>required</strong> for <code>run-all</code>)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="results">Results</h3>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--save-results</code></td>
+<td><code>false</code></td>
+<td>Save aggregated JSON summary</td>
+</tr>
+<tr>
+<td><code>--results-dir</code></td>
+<td><code>./results</code></td>
+<td>Base directory for results</td>
+</tr>
+<tr>
+<td><code>--storage-driver</code></td>
+<td><code>Not-Specified</code></td>
+<td>Storage driver label (folder component)</td>
+</tr>
+<tr>
+<td><code>--disks-per-vm</code></td>
+<td><code>auto</code></td>
+<td>Disks-per-VM label (folder component); auto-detected from VM spec</td>
+</tr>
+<tr>
+<td><code>--run-name</code></td>
+<td>(auto)</td>
+<td>Override run folder name (default: <code>{timestamp}_elbencho_{N}vms</code>)</td>
+</tr>
+<tr>
+<td><code>--output-dir</code></td>
+<td>(none)</td>
+<td><strong>Deprecated</strong>: full output path that bypasses the structured layout</td>
+</tr>
+</tbody>
+</table>
+<h3 id="ssh">SSH</h3>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--ssh-pod</code></td>
+<td><code>ssh-test-pod</code></td>
+<td>SSH helper pod name (must have <code>sshpass</code>)</td>
+</tr>
+<tr>
+<td><code>--ssh-pod-ns</code></td>
+<td><code>default</code></td>
+<td>SSH helper pod namespace</td>
+</tr>
+<tr>
+<td><code>--vm-user</code></td>
+<td><code>root</code></td>
+<td>VM SSH user</td>
+</tr>
+<tr>
+<td><code>--vm-password</code></td>
+<td><code>Password1</code></td>
+<td>VM SSH password</td>
+</tr>
+</tbody>
+</table>
+<h3 id="execution">Execution</h3>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--concurrency</code>, <code>-c</code></td>
+<td><code>20</code></td>
+<td>Max concurrent operations</td>
+</tr>
+<tr>
+<td><code>--log-level</code></td>
+<td><code>INFO</code></td>
+<td><code>DEBUG</code>, <code>INFO</code>, <code>WARNING</code>, <code>ERROR</code></td>
+</tr>
+<tr>
+<td><code>--log-file</code></td>
+<td>(auto)</td>
+<td>Log file path. With <code>--save-results</code>, defaults to <code>elbencho_&lt;action&gt;_&lt;timestamp&gt;.log</code> inside the run result folder.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="workload-mode-examples">Workload Mode Examples</h2>
+<pre><code class="language-bash"># IOPS mode: 2000 total IOPS (1000 read + 1000 write), 8K blocks, 4 disks
+virtbench elbencho -p perf-test -s 1 -e 10 -n rhel-elbencho-1 \
+  -a change-workload --iops 2000 --block-size 8K --num-disks 4
 
-  - test_type: &quot;migration&quot;
-    date: &quot;2024-01-16&quot;
-    storage_driver: &quot;portworx-3.6&quot;
-    vm_count: 50
-    avg_migration_duration: 25.4
-    success_rate: 100
-    notes: &quot;Sequential migration test&quot;
+# IOPS mode: 500 IOPS for 5 minutes
+virtbench elbencho -p perf-test -s 1 -e 10 -n rhel-elbencho-1 \
+  -a change-workload --iops 500 --block-size 4K \
+  --threads 4 --iodepth 2 --duration 300
+
+# RWMIX mode: 100% read at max throughput
+virtbench elbencho -p perf-test -s 1 -e 10 -n rhel-elbencho-1 \
+  -a change-workload --rwmixpct 100 --block-size 64K \
+  --iodepth 4 --threads 8
+
+# RWMIX mode: 70% read / 30% write at max throughput
+virtbench elbencho -p perf-test -s 1 -e 10 -n rhel-elbencho-1 \
+  -a change-workload --rwmixpct 70 --block-size 32K \
+  --iodepth 2 --threads 12 --num-disks 2
 </code></pre>
-<h2 id="dashboard-sections">Dashboard Sections</h2>
-<h3 id="1-cluster-overview">1. Cluster Overview</h3>
-<p>Displays cluster configuration and metadata from <code>cluster_info.yaml</code>.</p>
-<h3 id="2-test-summary">2. Test Summary</h3>
-<p>High-level statistics across all test types:
-- Total tests run
-- Date range of results
-- Success rates
-- Performance trends</p>
-<h3 id="3-vm-creation-results">3. VM Creation Results</h3>
-<p>Organized by storage driver and disk count:
-- Interactive charts for time to Running and time to Ping
-- Detailed tables with all test runs
-- Filtering and sorting capabilities</p>
-<h3 id="4-boot-storm-results">4. Boot Storm Results</h3>
-<p>Comparison between initial creation and boot storm:
-- Side-by-side performance charts
-- Performance degradation metrics
-- Statistical analysis</p>
-<h3 id="5-migration-results">5. Migration Results</h3>
-<p>Migration performance analysis:
-- Duration charts
-- Success rate tracking
-- Detailed migration metrics</p>
-<h3 id="6-chaos-benchmark-results">6. Chaos Benchmark Results</h3>
-<p>Chaos testing outcomes:
-- Concurrent operations performance
-- Phase-by-phase performance
-- Failure point analysis</p>
-<h2 id="using-the-dashboard">Using the Dashboard</h2>
-<h3 id="navigation">Navigation</h3>
+<h2 id="results_1">Results</h2>
+<p><code>gather-results</code> (and <code>run-all</code>) produce per-VM raw output plus an aggregated JSON summary:</p>
 <ul>
-<li>Use the table of contents to jump to specific sections</li>
-<li>Click on chart elements for detailed information</li>
-<li>Use table search and sort features to find specific results</li>
+<li><strong>IOPS</strong> - total / read / write</li>
+<li><strong>Throughput</strong> - total / read / write (bytes/sec)</li>
+<li><strong>Latency</strong> - average / min / max (microseconds)</li>
 </ul>
-<h3 id="filtering-results">Filtering Results</h3>
-<ul>
-<li>Filter by storage driver</li>
-<li>Filter by disk count</li>
-<li>Filter by date range</li>
-<li>Filter by test type</li>
-</ul>
-<h3 id="exporting-data">Exporting Data</h3>
-<ul>
-<li>Tables can be copied to clipboard</li>
-<li>Export to CSV or Excel</li>
-<li>Print-friendly view available</li>
-</ul>
-<h2 id="best-practices">Best Practices</h2>
-<ol>
-<li><strong>Regular Generation</strong>: Generate dashboard after each test run to track trends</li>
-<li><strong>Driver Tracking</strong>: Use <code>--storage-driver</code> to organize DataSource clone and boot-storm results by backend driver, such as <code>portworx-3.6</code> or <code>ceph</code></li>
-<li><strong>Cluster Info</strong>: Keep <code>cluster_info.yaml</code> updated with current configuration</li>
-<li><strong>Manual Results</strong>: Document baseline tests and special scenarios</li>
-<li><strong>Archive Dashboards</strong>: Save dashboard HTML files for historical reference</li>
-</ol>
+<h3 id="output-structure">Output Structure</h3>
+<pre><code>{results-dir}/{storage-driver}/{disks-per-vm}/{run-name}/
+├── aggregated_results.json        # Summary across all VMs
+├── elbencho_gather.log            # Execution log
+└── perf-test-1/                   # Per-VM raw output
+    ├── rwmix_&lt;timestamp&gt;.json
+    ├── rwmix_&lt;timestamp&gt;.txt
+    ├── rwmix_&lt;timestamp&gt;.csv
+    └── rwmix_&lt;timestamp&gt;_live.csv
+</code></pre>
+<p>Default <code>run-name</code>: <code>{timestamp}_elbencho_{N}vms</code>.</p>
+<h3 id="aggregated-json">Aggregated JSON</h3>
+<pre><code class="language-json">{
+  &quot;timestamp&quot;: &quot;2026-03-13T16:39:23.123456&quot;,
+  &quot;vms_with_results&quot;: 10,
+  &quot;vms_skipped&quot;: 0,
+  &quot;elapsed_seconds&quot;: 15.61,
+  &quot;aggregated&quot;: {
+    &quot;total_iops&quot;: 45000,
+    &quot;read_iops&quot;: 31500,
+    &quot;write_iops&quot;: 13500,
+    &quot;total_throughput_bytes&quot;: 1474560000,
+    &quot;read_throughput_bytes&quot;: 1032192000,
+    &quot;write_throughput_bytes&quot;: 442368000,
+    &quot;avg_latency_us&quot;: 4500,
+    &quot;min_latency_us&quot;: 500,
+    &quot;max_latency_us&quot;: 50000
+  },
+  &quot;per_vm_results&quot;: [ ... ]
+}
+</code></pre>
+<h3 id="view-in-dashboard">View in Dashboard</h3>
+<p>Generate the dashboard from the saved results directory after the run.</p>
 <h2 id="troubleshooting">Troubleshooting</h2>
-<h3 id="no-results-found">No results found</h3>
-<p><strong>Cause</strong>: Results directory is empty or doesn't contain recent results</p>
-<p><strong>Solution</strong>:
-- Verify results directory path with <code>--base-dir</code>
-- Increase <code>--days</code> to include older results
-- Ensure tests were run with <code>--save-results</code> flag</p>
-<h3 id="dashboard-generation-fails">Dashboard generation fails</h3>
-<p><strong>Cause</strong>: Missing dependencies or malformed result files</p>
-<p><strong>Solution</strong>:
-- Install required Python packages: <code>pip install -r requirements.txt</code>
-- Check result JSON files for syntax errors
-- Review dashboard script logs for specific errors</p>
-<h3 id="charts-not-displaying">Charts not displaying</h3>
-<p><strong>Cause</strong>: JavaScript errors or missing Plotly library</p>
-<p><strong>Solution</strong>:
-- Open browser console to check for errors
-- Ensure internet connection (Plotly loads from CDN)
-- Try a different web browser</p>
-<h2 id="see-also">See Also</h2>
-<ul>
-<li><a href="../output-and-results/">Output and Results</a> - Understanding test output</li>
-<li><a href="../configuration/">Configuration Options</a> - Test configuration reference</li>
-<li><a href="../test-scenarios/overview/">User Guide</a> - Running performance tests</li>
-</ul>
+<p><strong>No JSON files generated.</strong> elbencho only writes JSON output when stopped gracefully via SIGINT. If files are missing, rerun <code>gather-results</code> with <code>--log-level DEBUG</code> and verify the elbencho process responds to signals.</p>
+<p><strong>VMs skipped in aggregation.</strong> A VM is skipped if no elbencho process is running, the VM IP cannot be retrieved, or SSH fails. Check <code>virtbench elbencho ... -a status</code> first.</p>
+<p><strong>Connection issues.</strong> Confirm the SSH helper pod is running (<code>kubectl get pod ssh-test-pod -n default</code>), the VMs are reachable from that pod, and <code>--vm-user</code> / <code>--vm-password</code> are correct.</p>
 
 
 
@@ -2542,10 +2474,10 @@ notes: &quot;Production cluster with HA configuration&quot;
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../../..", "features": [], "search": "../../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../../../..", "features": [], "search": "../../../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      <script src="../../../../assets/javascripts/bundle.79ae519e.min.js"></script>
       
     
   </body>
