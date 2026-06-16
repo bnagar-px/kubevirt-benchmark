@@ -682,20 +682,24 @@ Examples:
     return args
 
 
-def save_test_results(args: argparse.Namespace, results: List[Dict],
-                      logger: logging.Logger) -> None:
-    """Save results to disk using utils.common.save_results."""
-    timestamp = datetime.now().strftime('%Y%m%d-%H%M%S')
+def build_results_dir(args: argparse.Namespace, timestamp: Optional[str] = None) -> str:
+    """Build the canonical failure-recovery results directory."""
+    timestamp = timestamp or datetime.now().strftime('%Y%m%d-%H%M%S')
     suffix = f"{args.namespace_prefix}_{args.node}"
 
     if args.storage_driver:
-        out_dir = os.path.join(args.results_folder, args.storage_driver,
-                               'failure-recovery', f"{timestamp}_{suffix}")
-    else:
-        out_dir = os.path.join(args.results_folder, 'failure-recovery',
-                               f"{timestamp}_{suffix}")
+        return os.path.join(args.results_folder, args.storage_driver,
+                            'failure-recovery', f"{timestamp}_{suffix}")
+    return os.path.join(args.results_folder, 'failure-recovery',
+                        f"{timestamp}_{suffix}")
+
+
+def save_test_results(args: argparse.Namespace, results: List[Dict],
+                      logger: logging.Logger) -> None:
+    """Save results to disk using utils.common.save_results."""
+    out_dir = getattr(args, '_results_dir', None) or build_results_dir(args)
     os.makedirs(out_dir, exist_ok=True)
-    logger.info(f"Created results directory: {out_dir}")
+    logger.info(f"Using results directory: {out_dir}")
 
     save_results(
         args,
@@ -710,6 +714,14 @@ def save_test_results(args: argparse.Namespace, results: List[Dict],
 
 def main() -> int:
     args = parse_args()
+
+    args._results_dir = None
+    if args.save_results:
+        args._results_dir = build_results_dir(args)
+        os.makedirs(args._results_dir, exist_ok=True)
+        if not args.log_file:
+            args.log_file = os.path.join(args._results_dir, 'failure-recovery.log')
+
     logger = setup_logging(log_file=args.log_file, log_level=args.log_level)
 
     logger.info("=" * 70)

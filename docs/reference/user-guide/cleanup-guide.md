@@ -30,9 +30,7 @@ All test scripts support comprehensive cleanup with multiple options for differe
 - FenceAgentsRemediation (FAR) custom resources
 - FAR annotations from VMs
 - Uncordon nodes that were marked as failed
-- Optionally: VMs, DataVolumes, PVCs, and namespaces — only via the Python
-  script with `--cleanup-vms` (the `virtbench failure-recovery` wrapper
-  cleans up FAR resources only)
+- Optionally: VMs, DataVolumes, PVCs, and namespaces with `--cleanup-vms`
 
 ### Chaos Benchmark Tests
 
@@ -74,6 +72,9 @@ virtbench migration --start 1 --end 10 --source-node worker-1 --create-vms --cle
 ```bash
 # Clean up FAR resources after a recovery test
 virtbench failure-recovery --node worker-1 --cleanup --yes
+
+# Also delete discovered VM namespaces and VM resources
+virtbench failure-recovery --node worker-1 --cleanup --cleanup-vms --yes
 ```
 
 ### Clean up after Chaos Benchmark
@@ -182,4 +183,3 @@ kubectl patch pvc <pvc-name> -p '{"metadata":{"finalizers":[]}}' --type=merge -n
 - [Configuration Options](configuration.md) - All cleanup-related options
 - [Output and Results](output-and-results.md) - Saving results before cleanup
 - [Best Practices](../best-practices.md) - Cleanup best practices
-

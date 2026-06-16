@@ -15,6 +15,11 @@ console = Console()
 
 
 @click.command('failure-recovery')
+@click.option('--mode',
+              type=click.Choice(['monitor', 'manual', 'far-operator']),
+              default='monitor',
+              show_default=True,
+              help='Failure workflow: monitor external failure, wait for manual failure, or trigger FAR')
 @click.option('--node', required=True, help='Node name to auto-detect VMs from')
 @click.option('--vm-name', '-n', default='rhel-9-vm', help='VM resource name')
 @click.option('--vm-template',
@@ -22,10 +27,24 @@ console = Console()
               help='Path to VM template YAML')
 @click.option('--storage-class', help='Storage class name (overrides template value)')
 @click.option('--namespace-prefix', default='failure-recovery', help='Namespace prefix')
+@click.option('--far-config',
+              default='failure-recovery/far-template.yaml',
+              help='FAR YAML manifest for --mode far-operator')
+@click.option('--remove-node-selector', is_flag=True,
+              help='Remove nodeSelector from VMs before recovery monitoring')
 @click.option('--concurrency', '-c', default=10, type=int, help='Max parallel threads')
 @click.option('--poll-interval', default=5, type=int, help='Seconds between status checks')
+@click.option('--node-timeout', default=600, type=int, help='Timeout for node to become NotReady')
 @click.option('--recovery-timeout', default=600, type=int, help='Timeout for recovery in seconds')
+@click.option('--skip-ping', is_flag=True, help='Skip ping recovery checks')
+@click.option('--ssh-pod', default='ssh-test-pod', help='SSH pod name for ping checks')
+@click.option('--ssh-pod-namespace', default='default', help='SSH pod namespace for ping checks')
 @click.option('--cleanup/--no-cleanup', default=False, help='Delete test resources after completion')
+@click.option('--cleanup-vms', is_flag=True, help='Also delete VMs and namespaces during cleanup')
+@click.option('--dry-run-cleanup', is_flag=True, help='Show cleanup actions without applying them')
+@click.option('--far-name', help='FAR resource name to delete during cleanup')
+@click.option('--far-namespace', default='default', help='FAR resource namespace')
+@click.option('--failed-node', help='Node to uncordon during cleanup (defaults to --node)')
 @click.option('--yes', '-y', is_flag=True, help='Skip confirmation prompts')
 @click.option('--save-results', is_flag=True, help='Save detailed results to results folder')
 @click.option('--results-folder', default='../results', help='Base directory to store test results')
@@ -41,11 +60,11 @@ def failure_recovery(ctx, **kwargs):
 
     \b
     Examples:
-      # Auto-detect VMs on a node and monitor recovery
       virtbench failure-recovery --node worker-1 --vm-name rhel-9-vm
 
-      # Run with cleanup
-      virtbench failure-recovery --node worker-1 --cleanup
+      virtbench failure-recovery --mode manual --node worker-1
+
+      virtbench failure-recovery --mode far-operator --node worker-1
     """
     print_banner("Failure Recovery Benchmark")
     
@@ -69,6 +88,17 @@ def failure_recovery(ctx, **kwargs):
         except Exception as e:
             console.print(f"[red]Error modifying storage class: {e}[/red]")
             sys.exit(1)
+
+    far_config_path = None
+    if kwargs['far_config']:
+        far_config_path = Path(kwargs['far_config'])
+        if not far_config_path.is_absolute():
+            far_config_path = repo_root / far_config_path
+
+    if kwargs['mode'] == 'far-operator':
+        if not far_config_path or not far_config_path.exists():
+            console.print(f"[red]Error: FAR config file not found: {far_config_path}[/red]")
+            sys.exit(1)
     
     # Build Python script command
     script_path = repo_root / 'failure-recovery' / 'recovery-test.py'
@@ -79,14 +109,18 @@ def failure_recovery(ctx, **kwargs):
 
     # Map CLI args to Python script args
     python_args = {
-        'mode': 'monitor',
+        'mode': kwargs['mode'],
         'node': kwargs['node'],
         'vm-name': kwargs['vm_name'],
         'vm-template': str(template_path),
         'namespace-prefix': kwargs['namespace_prefix'],
+        'far-config': str(far_config_path) if far_config_path else None,
         'concurrency': kwargs['concurrency'],
         'poll-interval': kwargs['poll_interval'],
+        'node-timeout': kwargs['node_timeout'],
         'recovery-timeout': kwargs['recovery_timeout'],
+        'ssh-pod': kwargs['ssh_pod'],
+        'ssh-pod-namespace': kwargs['ssh_pod_namespace'],
         'results-folder': kwargs['results_folder'],
         'log-level': ctx.obj.log_level.upper(),
     }
@@ -94,6 +128,14 @@ def failure_recovery(ctx, **kwargs):
     # Add boolean flags
     if kwargs['cleanup']:
         python_args['cleanup'] = True
+    if kwargs['cleanup_vms']:
+        python_args['cleanup-vms'] = True
+    if kwargs['dry_run_cleanup']:
+        python_args['dry-run-cleanup'] = True
+    if kwargs['remove_node_selector']:
+        python_args['remove-node-selector'] = True
+    if kwargs['skip_ping']:
+        python_args['skip-ping'] = True
     if kwargs['yes']:
         python_args['yes'] = True
     if kwargs['save_results']:
@@ -101,13 +143,20 @@ def failure_recovery(ctx, **kwargs):
 
     if kwargs.get('storage_driver'):
         python_args['storage-driver'] = kwargs['storage_driver']
+    if kwargs.get('far_name'):
+        python_args['far-name'] = kwargs['far_name']
+    if kwargs.get('far_namespace'):
+        python_args['far-namespace'] = kwargs['far_namespace']
+    if kwargs.get('failed_node'):
+        python_args['failed-node'] = kwargs['failed_node']
     
-    # Add log-file (prefer subcommand option, then global context, then auto-generate)
+    # Add log-file only when explicitly requested. With --save-results, the
+    # script creates the run directory first and writes the log next to JSON/CSV.
     if kwargs.get('log_file'):
         python_args['log-file'] = kwargs['log_file']
     elif ctx.obj.log_file:
         python_args['log-file'] = ctx.obj.log_file
-    else:
+    elif not kwargs['save_results']:
         python_args['log-file'] = generate_log_filename('failure-recovery')
     
     # Build and run command

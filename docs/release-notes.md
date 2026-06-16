@@ -112,8 +112,8 @@ removed from the user documentation.
 `failure-recovery/recovery-test.py` replaces the previous
 `measure-recovery-time.py` and the `run-far-test.sh` /
 `run-manual-failure-test.sh` / `patch-vms.sh` shell scripts. The wrapper
-exposes node-targeted recovery testing via `virtbench failure-recovery
---node <name>`.
+exposes node-targeted recovery testing via `virtbench failure-recovery`,
+including `--mode monitor`, `--mode manual`, and `--mode far-operator`.
 
 #### Documentation Site
 

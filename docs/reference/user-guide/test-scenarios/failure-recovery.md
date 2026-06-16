@@ -4,18 +4,23 @@ Tests VM recovery time after node failures to validate high availability and dis
 
 **Use Case**: Validates that VMs can recover and restart on healthy nodes after a node failure.
 
-This guide covers the supported `virtbench failure-recovery` workflow for
-monitoring VM recovery after a node failure. Fence Agents Remediation (FAR)
-can be used to automate node fencing.
+`virtbench failure-recovery` supports three workflows:
+
+- `monitor`: Monitor recovery after the node failure was triggered externally.
+- `manual`: Wait for you to manually power off or fence the node, then monitor recovery.
+- `far-operator`: Apply a FAR manifest to trigger fencing, then monitor recovery.
 
 ---
 
-## Automated FAR Testing
+## FAR Prerequisites
 
-### Prerequisites for FAR Testing
+`--mode far-operator` requires Fence Agents Remediation (FAR) to be installed
+and configured before the test starts. `--mode monitor` and `--mode manual` do
+not apply FAR manifests directly, but they can still be used in clusters where
+NHC/FAR handles remediation.
 
 !!! warning "Important"
-    Before running failure and recovery tests, you must have the following operators installed and configured on your cluster.
+    Before running FAR-based failure and recovery tests, install and configure the required remediation operators for your environment.
 
 ### Required Operators
 
@@ -52,47 +57,61 @@ Both operators are part of the [MedIK8s](https://www.medik8s.io/) project for Ku
 
 ### Verify Installation
 
-```bash
-# Verify CRDs are available
-kubectl get crd nodehealthchecks.remediation.medik8s.io
-kubectl get crd fenceagentsremediations.fence-agents-remediation.medik8s.io
+Before running `--mode far-operator`, verify that the NodeHealthCheck and FAR
+CRDs exist, the FAR template exists, and the NodeHealthCheck configuration
+references the expected remediation template.
 
-# Verify your FenceAgentsRemediationTemplate exists
-kubectl get fenceagentsremediationtemplates -A
+## Running Tests
 
-# Verify your NodeHealthCheck is configured
-kubectl get nodehealthchecks -A
-```
+### Monitor Mode
 
-## Running FAR Tests
-
-### Using virtbench CLI
+Use `monitor` mode when the node failure is triggered outside virtbench, such as
+by your own automation, FAR/NHC, a cloud action, or a manual BMC action. This is
+the default mode.
 
 ```bash
-# Run failure recovery test (auto-detects VMs on the node)
 virtbench failure-recovery \
+  --mode monitor \
   --node worker-node-1 \
   --vm-name rhel-9-vm \
-  --save-results
-
-# With a different VM name
-virtbench failure-recovery \
-  --node worker-node-1 \
-  --vm-name debian-vm \
+  --storage-driver portworx-3.6 \
   --save-results
 ```
 
+### Manual Mode
 
-### Monitor-Only Mode
+Use `manual` mode when you want virtbench to wait until the node becomes
+`NotReady` after you power off or fence the node yourself.
 
-If you trigger node failure separately (for example via your own automation or
-manual BMC action), run the wrapper to auto-detect VMIs on the affected node
-and monitor recovery:
+If your storage driver supports recovering VMs automatically without the FAR
+operator, use this mode to measure that recovery path.
 
 ```bash
 virtbench failure-recovery \
+  --mode manual \
   --node worker-node-1 \
   --vm-name rhel-9-vm \
+  --node-timeout 900 \
+  --remove-node-selector \
+  --skip-ping \
+  --storage-driver portworx-3.6 \
+  --save-results
+```
+
+### FAR-Operator Mode
+
+Use `far-operator` mode when virtbench should apply a FAR manifest to trigger
+fencing. The command removes the FAR config after the run finishes.
+
+```bash
+virtbench failure-recovery \
+  --mode far-operator \
+  --node worker-node-1 \
+  --vm-name rhel-9-vm \
+  --far-config failure-recovery/far-template.yaml \
+  --node-timeout 900 \
+  --skip-ping \
+  --storage-driver portworx-3.6 \
   --save-results
 ```
 
@@ -135,6 +154,14 @@ virtbench failure-recovery \
   --node worker-node-1 \
   --vm-name rhel-9-vm \
   --cleanup \
+  --yes
+
+# Clean up FAR resources and discovered VM namespaces
+virtbench failure-recovery \
+  --node worker-node-1 \
+  --vm-name rhel-9-vm \
+  --cleanup \
+  --cleanup-vms \
   --yes
 ```
 

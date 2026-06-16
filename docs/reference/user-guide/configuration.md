@@ -90,20 +90,32 @@ does **not** take `--start`/`--end`.
 
 | Option | Description | Default |
 |--------|-------------|---------|
+| `--mode` | Failure workflow: `monitor`, `manual`, or `far-operator` | monitor |
 | `--node` *(required)* | Node name to auto-detect VMs from | — |
 | `--vm-name`, `-n` | VM resource name | rhel-9-vm |
-| `--vm-template` | VM template YAML file | ../examples/vm-templates/vm-template.yaml |
+| `--vm-template` | VM template YAML file | examples/vm-templates/rhel9-vm-datasource.yaml |
 | `--storage-class` | Storage class name (overrides template value) | None |
 | `--namespace-prefix` | Prefix for test namespaces | failure-recovery |
+| `--far-config` | FAR YAML manifest for `--mode far-operator` | failure-recovery/far-template.yaml |
+| `--remove-node-selector` | Remove nodeSelector from VMs before recovery monitoring | false |
 | `--concurrency`, `-c` | Max parallel threads | 10 |
 | `--poll-interval` | Seconds between polls | 5 |
+| `--node-timeout` | Timeout for node to become NotReady | 600 |
 | `--recovery-timeout` | Timeout for recovery in seconds | 600 |
+| `--skip-ping` | Skip ping recovery checks | false |
+| `--ssh-pod` | SSH pod name for ping checks | ssh-test-pod |
+| `--ssh-pod-namespace` | SSH pod namespace for ping checks | default |
 | `--cleanup / --no-cleanup` | Delete test resources after completion | false |
+| `--cleanup-vms` | Also delete VMs and namespaces during cleanup | false |
+| `--dry-run-cleanup` | Show cleanup actions without applying them | false |
+| `--far-name` | FAR resource name to delete during cleanup | None |
+| `--far-namespace` | FAR resource namespace | default |
+| `--failed-node` | Node to uncordon during cleanup (defaults to `--node`) | None |
 | `--yes`, `-y` | Skip confirmation prompts | false |
 | `--save-results` | Save detailed results to results folder | false |
 | `--results-folder` | Base directory to store test results | ../results |
 | `--storage-driver` | Storage driver to include in results path (optional) | - |
-| `--log-file` | Log file path | auto-generated |
+| `--log-file` | Log file path; with `--save-results`, defaults to `failure-recovery.log` in the run result folder | auto-generated |
 
 ## Chaos Benchmark Tests
 

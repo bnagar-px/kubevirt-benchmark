@@ -175,7 +175,9 @@ Set timeouts based on your RTO requirements:
 ```bash
 virtbench failure-recovery \
   --node worker-1 \
-  --recovery-timeout 600  # 10 minutes
+  --storage-driver portworx-3.6 \
+  --recovery-timeout 600 \
+  --save-results
 ```
 
 ### 3. Clean Up FAR Resources
