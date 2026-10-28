@@ -1,5 +1,5 @@
 <h1 style="display: flex; align-items: center; gap: 10px;">
-  <img src="virtbench-transparent.png" alt="virtbench logo" style="height: 5em; width: auto;"/>
+  <img src="virtbench-transparent.gif" alt="virtbench logo" style="height: 5em; width: auto;"/>
   <span>KubeVirt Performance Benchmarking Suite</span>
 </h1>
 
@@ -49,4 +49,3 @@ Get started in minutes:
 ## License
 
 This project is licensed under the Apache License 2.0. See [LICENSE](license.md) for details.
-
