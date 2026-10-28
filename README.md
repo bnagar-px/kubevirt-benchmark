@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/virtbench-transparent.gif" alt="virtbench logo" width="400"/>
+  <img src="docs/virtbench_transparent.gif" alt="virtbench logo" width="400"/>
 </p>
 
 # KubeVirt Performance Benchmarking Suite
