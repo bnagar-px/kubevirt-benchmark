@@ -10,7 +10,7 @@ repo_url: https://github.com/portworx/kubevirt-benchmark
 theme:
   name: material
   favicon: favicon.png
-  logo: virtbench-header.png
+  logo: virtbench_transparent.gif
   features:
     - content.code.copy
   palette:
